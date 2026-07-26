@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AETHERIS — Echoes of an Eternal Empire</title>
+<meta name="description" content="AETHERIS: Ein browserbasiertes Weltraum-Imperium ohne Download. Kolonisiere, forsche, handle mit Dunkler Materie — und behaupte dich in einer Galaxie, die auch dir nicht allein gehört.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#100C0A; --bg2:#161010; --panel:#1B1512; --panel2:#1F1814; --line:#2B1E19;
+    --gold:#D4AF37; --gold-soft:rgba(212,175,55,0.35); --gold-dim:#8A7A6A;
+    --cream:#EDE4D3; --red:#C4402E; --green:#7FA85A; --blue:#7FA0C4;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:var(--bg); color:var(--cream);
+    font-family:'Spectral',Georgia,serif; font-size:17px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{ font-family:'Cinzel',serif; font-weight:700; letter-spacing:0.5px; color:var(--gold); margin:0; }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:3px; text-transform:uppercase;
+    color:var(--gold-dim); display:flex; align-items:center; gap:10px; margin-bottom:18px;
+  }
+  .eyebrow::before{ content:""; width:22px; height:1px; background:var(--gold-soft); display:inline-block; }
+  a{ color:inherit; }
+  ::selection{ background:var(--gold); color:#100C0A; }
+  :focus-visible{ outline:2px solid var(--gold); outline-offset:3px; }
+
+  /* ---------- Starfield backdrop ---------- */
+  #stars{ position:fixed; inset:0; z-index:0; opacity:0.55; pointer-events:none; }
+
+  /* ---------- Shell ---------- */
+  .wrap{ max-width:1080px; margin:0 auto; padding:0 28px; position:relative; z-index:2; }
+  section{ position:relative; z-index:2; }
+
+  /* ---------- Top nav ---------- */
+  .topnav{
+    position:fixed; top:0; left:0; right:0; z-index:20;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 28px; backdrop-filter:blur(6px); background:linear-gradient(180deg, rgba(16,12,10,0.85), rgba(16,12,10,0));
+  }
+  .topnav .logo{ font-family:'Cinzel',serif; font-weight:700; font-size:19px; color:var(--gold); letter-spacing:1px; }
+  .topnav .logo span{ color:var(--red); }
+  .topnav .navlinks{ display:flex; gap:26px; font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:1px; }
+  .topnav .navlinks a{ color:var(--gold-dim); text-decoration:none; transition:color .15s; }
+  .topnav .navlinks a:hover{ color:var(--gold); }
+  .topnav .navcta{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase;
+    padding:8px 16px; border-radius:8px; border:1px solid var(--gold-soft); color:var(--gold); text-decoration:none;
+    transition:background .15s,border-color .15s;
+  }
+  .topnav .navcta:hover{ background:#221A10; border-color:var(--gold); }
+  @media (max-width:720px){ .topnav .navlinks{ display:none; } }
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    font-family:'IBM Plex Mono',monospace; font-size:13px; letter-spacing:1.5px; text-transform:uppercase;
+    padding:15px 28px; border-radius:10px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:10px;
+    border:1px solid var(--gold-soft); background:#161010; color:var(--cream);
+    transition:border-color .15s, background .15s, transform .15s;
+  }
+  .btn:hover{ border-color:var(--gold); background:#221A10; transform:translateY(-1px); }
+  .btn.primary{ background:linear-gradient(180deg,#2A2010,#1D1608); border-color:var(--gold); color:var(--gold); }
+  .btn.primary:hover{ background:linear-gradient(180deg,#332714,#221A0C); box-shadow:0 0 24px -6px rgba(212,175,55,0.55); }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    min-height:100svh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:140px 28px 80px; overflow:hidden;
+  }
+  .orbit-group{ transform-origin:250px 250px; animation:orbitspin 240s linear infinite; pointer-events:auto; }
+  .orbit-node{ cursor:pointer; }
+  .orbit-node circle.core{ fill:#181310; stroke-width:1.6; transition:stroke .2s,filter .2s; }
+  .orbit-node:hover circle.core{ filter:drop-shadow(0 0 6px currentColor); }
+  .orbit-node .counter-spin{ transform-origin:center; animation:orbitspin-rev 240s linear infinite; }
+  @keyframes orbitspin{ to{ transform:rotate(360deg); } }
+  @keyframes orbitspin-rev{ to{ transform:rotate(-360deg); } }
+
+  .hero-inner{ position:relative; z-index:3; max-width:760px; }
+  .hero .eyebrow{ justify-content:center; }
+  .hero .eyebrow::before,.hero .eyebrow::after{ content:""; width:22px; height:1px; background:var(--gold-soft); }
+  .hero h1{ font-size:clamp(48px,9vw,96px); line-height:0.95; }
+  .hero h1 span{ color:var(--red); }
+  .hero .sub{ font-family:'Cinzel',serif; font-size:clamp(14px,2vw,18px); color:var(--gold-dim); letter-spacing:2px; text-transform:uppercase; margin-top:14px; }
+  .hero p.pitch{ margin:28px auto 0; max-width:560px; font-size:18px; color:#D8CBB8; }
+  .hero .ctas{ display:flex; gap:16px; justify-content:center; margin-top:38px; flex-wrap:wrap; }
+  .hero .meta{
+    margin-top:34px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:1px; color:var(--gold-dim);
+    display:flex; gap:18px; justify-content:center; flex-wrap:wrap;
+  }
+  .hero .meta b{ color:#7FA85A; font-weight:600; }
+  .scroll-hint{
+    position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:3px; color:var(--gold-dim);
+    text-transform:uppercase; animation:pulse 2.2s ease-in-out infinite;
+  }
+  @keyframes pulse{ 0%,100%{opacity:0.35;} 50%{opacity:0.9;} }
+
+  /* ---------- Reveal ---------- */
+  .reveal{ opacity:0; transform:translateY(28px); transition:opacity .7s ease, transform .7s ease; }
+  .reveal.in{ opacity:1; transform:none; }
+
+  /* ---------- Section shell ---------- */
+  .section{ padding:110px 0; border-top:1px solid var(--line); }
+  .section .head{ max-width:600px; margin-bottom:56px; }
+  .section .head h2{ font-size:clamp(28px,4vw,40px); line-height:1.1; }
+  .section .head p{ color:#B8AC98; margin-top:16px; font-size:17px; }
+
+  /* ---------- Feature grid ---------- */
+  .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  @media (max-width:860px){ .grid3{ grid-template-columns:1fr; } }
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:28px 26px;
+    transition:border-color .2s, transform .2s;
+  }
+  .card:hover{ border-color:var(--gold-soft); transform:translateY(-3px); }
+  .card .icon{ font-size:26px; display:block; margin-bottom:16px; }
+  .card .icon-img{ width:26px; height:26px; object-fit:contain; }
+  .card h3{ font-size:18px; color:var(--gold); font-family:'Cinzel',serif; }
+  .card p{ color:#B8AC98; font-size:15px; margin-top:10px; }
+
+  /* ---------- Scarcity / signature section ---------- */
+  .scarcity{ display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; }
+  @media (max-width:900px){ .scarcity{ grid-template-columns:1fr; } }
+  .legend{ display:flex; flex-direction:column; gap:12px; margin-top:26px; }
+  .legend .row{ display:flex; align-items:center; gap:12px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#B8AC98; }
+  .legend .dot{ width:11px; height:11px; border-radius:50%; flex:none; }
+  .mini-orbit{ position:relative; aspect-ratio:1/1; }
+  .mini-orbit svg{ width:100%; height:100%; }
+  .ring{ fill:none; stroke:#3A2A1A; stroke-width:1; opacity:0.4; }
+  .sector{ fill:none; stroke:#3A2A1A; stroke-width:1; stroke-dasharray:3 5; opacity:0.35; }
+  .tip{
+    position:absolute; pointer-events:none; font-family:'IBM Plex Mono',monospace; font-size:11px;
+    background:#181310; border:1px solid var(--gold-soft); color:var(--cream); padding:6px 10px; border-radius:7px;
+    transform:translate(-50%,-140%); opacity:0; transition:opacity .15s; white-space:nowrap; z-index:5;
+  }
+  .tip.show{ opacity:1; }
+
+  /* ---------- HUD gauges (autopilot section) ---------- */
+  .hud{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:30px; }
+  .hud-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  @media (max-width:760px){ .hud-row{ grid-template-columns:repeat(2,1fr); } }
+  .gauge{ background:var(--bg2); border:1px solid #2A1A1A; border-radius:12px; padding:14px 12px; text-align:center; }
+  .gauge .lbl{ font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:1px; color:var(--gold-dim); text-transform:uppercase; }
+  .inline-icon{ width:12px; height:12px; object-fit:contain; vertical-align:-1px; margin-right:3px; }
+  .gauge .val{ font-family:'Cinzel',serif; font-weight:700; font-size:20px; margin-top:6px; color:var(--cream); }
+  .gauge .bar{ height:5px; background:#2A1A1A; border-radius:3px; margin-top:10px; overflow:hidden; }
+  .gauge .bar i{ display:block; height:100%; background:var(--gold); border-radius:3px; }
+
+  /* ---------- Black market chips ---------- */
+  .chiprow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:22px; }
+  .chip{
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:8px 14px; border-radius:20px;
+    border:1px solid var(--line); color:#B8AC98; background:#171210;
+  }
+  .chip.gold{ border-color:var(--gold-soft); color:var(--gold); }
+
+  /* ---------- Species row ---------- */
+  .species{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:10px; }
+  @media (max-width:760px){ .species{ grid-template-columns:repeat(2,1fr); } }
+  .species .sp{ text-align:center; padding:22px 12px; border:1px solid var(--line); border-radius:12px; background:var(--panel); }
+  .species .sp .glyph{ font-size:28px; }
+  .species .sp .name{ font-family:'Cinzel',serif; color:var(--gold); font-size:14px; margin-top:10px; }
+  .species .sp .desc{ font-size:12.5px; color:var(--gold-dim); margin-top:4px; }
+
+  /* ---------- Chronicle pull-quote ---------- */
+  .chronicle{
+    background:radial-gradient(ellipse at top, #1D1005, var(--bg));
+    border:1px solid var(--line); border-radius:18px; padding:56px 48px; position:relative; overflow:hidden;
+  }
+  .chronicle::before{
+    content:"§"; position:absolute; top:-40px; right:10px; font-family:'Cinzel',serif; font-size:220px;
+    color:var(--gold); opacity:0.05; pointer-events:none;
+  }
+  .chronicle .eyebrow{ color:var(--gold); }
+  .chronicle blockquote{
+    margin:0; font-style:italic; font-size:clamp(19px,2.4vw,25px); line-height:1.55; color:#EAD9B8;
+    max-width:640px;
+  }
+  .chronicle .attrib{ margin-top:22px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--gold-dim); }
+
+  /* ---------- Final CTA ---------- */
+  .finalcta{ text-align:center; padding:130px 0 100px; }
+  .finalcta h2{ font-size:clamp(30px,5vw,46px); }
+  .finalcta p{ color:#B8AC98; max-width:480px; margin:18px auto 0; }
+  .finalcta .ctas{ display:flex; gap:16px; justify-content:center; margin-top:34px; flex-wrap:wrap; }
+
+  footer{
+    border-top:1px solid var(--line); padding:32px 0 40px; text-align:center;
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--gold-dim); letter-spacing:0.5px;
+  }
+  footer .fver{ color:var(--gold); }
+
+  @media (prefers-reduced-motion:reduce){
+    html{ scroll-behavior:auto; }
+    .orbit-group,.counter-spin,.scroll-hint{ animation:none !important; }
+    .reveal{ transition:none; opacity:1; transform:none; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+
+<div class="topnav">
+  <div class="logo">AETHERIS<span>.</span></div>
+  <div class="navlinks">
+    <a href="#imperium">Imperium</a>
+    <a href="#galaxie">Galaxie</a>
+    <a href="#autopilot">Autopilot</a>
+    <a href="#chronik">Chronik</a>
+  </div>
+  <a href="game.html" class="navcta">Spielen</a>
+</div>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">BROWSERBASIERTES IMPERIUM · KEIN DOWNLOAD</div>
+    <h1>AETHERIS<span>.</span></h1>
+    <div class="sub">Echoes of an Eternal Empire</div>
+    <p class="pitch">Gründe eine Kolonie, baue eine Flotte auf und handle mit Dunkler Materie —
+      in einer Galaxie, die sich weiterdreht, auch wenn du gerade nicht online bist.</p>
+    <div class="ctas">
+      <a href="game.html" class="btn primary">▶ Jetzt spielen</a>
+      <a href="#galaxie" class="btn">Galaxie ansehen</a>
+    </div>
+    <div class="meta">
+      <span>v0.52.00 <b>Open Beta</b></span>
+      <span>30 Sternensysteme</span>
+      <span>Android-App in Vorbereitung</span>
+    </div>
+  </div>
+  <div class="scroll-hint">Scrollen</div>
+</section>
+
+<section class="section reveal" id="imperium">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow">DEIN IMPERIUM</div>
+      <h2>Kolonisieren. Ausbauen. Verteidigen.</h2>
+      <p>Jeder Planet ist ein Rädchen im selben Getriebe — Rohstoffe, Werft, Forschung und Flotte
+        greifen ineinander, egal ob du gerade drei oder dreißig Kolonien hältst.</p>
+    </div>
+    <div class="grid3">
+      <div class="card">
+        <span class="icon"><img class="icon-img" src="bilder/icons/navPlanet/navPlanet_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🪐</span></span>
+        <h3>Sternensysteme</h3>
+        <p>Kolonisiere freie Planeten in 30 benannten Systemen — jeder Typ mit eigenen
+          Rohstoff-Boni, von kargen Gesteinswelten bis zu seltenen Ringwelten.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><img class="icon-img" src="bilder/icons/navFlotte/navFlotte_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🛰️</span></span>
+        <h3>Flotten &amp; Verteidigung</h3>
+        <p>Baue Kolonieschiffe, Kampfflotten und Verteidigungsanlagen — und wehre
+          Piratenüberfälle im Tiefraumsektor ab, bevor sie deine Kolonie erreichen.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><img class="icon-img" src="bilder/monde/natuerlich/natuerlich_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🌕</span></span>
+        <h3>Monde &amp; Dunkle Materie</h3>
+        <p>Künstliche Monde fördern Dunkle Materie — die Premium-Währung für den
+          Schwarzmarkt, imperiumsweit geteilt über alle deine Kolonien.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section reveal" id="galaxie">
+  <div class="wrap">
+    <div class="scarcity">
+      <div>
+        <div class="eyebrow">KNAPPHEIT IST ECHT</div>
+        <h2>Die Galaxie gehört nicht dir allein.</h2>
+        <p style="color:#B8AC98;margin-top:16px">
+          Manche Planeten sind schon von anderen Imperien besetzt — deinen eigenen Zweitprofilen,
+          oder von <b style="color:var(--cream)">Unbekannten Imperien</b>, die still im Hintergrund
+          sitzen und jede Woche neu auswürfeln, welche Sektoren sie beanspruchen. Wer zu spät kommt,
+          muss warten oder woanders suchen.
+        </p>
+        <div class="legend">
+          <div class="row"><span class="dot" style="background:#7FA85A"></span> Eigene Kolonie</div>
+          <div class="row"><span class="dot" style="background:#D4AF37"></span> Heimatwelt</div>
+          <div class="row"><span class="dot" style="background:#C48888"></span> Fremdes / Unbekanntes Imperium</div>
+          <div class="row"><span class="dot" style="background:#4A3A2A"></span> Frei — noch zu haben</div>
+        </div>
+      </div>
+      <div class="mini-orbit" id="scarcityOrbit"></div>
+    </div>
+  </div>
+</section>
+
+<section class="section reveal" id="autopilot">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow">AUCH OFFLINE AKTIV</div>
+      <h2>Ein Autopilot, der mitdenkt.</h2>
+      <p>Er wählt Verteidigung nach echter Bedrohungslage, skaliert Einheiten nach
+        Kosten-Nutzen und baut eigenständig — solange du ihn mit Treibstoff versorgst.</p>
+    </div>
+    <div class="hud">
+      <div class="hud-row">
+        <div class="gauge"><div class="lbl"><img class="inline-icon" src="bilder/icons/metal/metal_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">⛏</span> Metall</div><div class="val">48.2k</div><div class="bar"><i style="width:64%"></i></div></div>
+        <div class="gauge"><div class="lbl"><img class="inline-icon" src="bilder/icons/crystal/crystal_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">◆</span> Kristall</div><div class="val">29.6k</div><div class="bar"><i style="width:41%"></i></div></div>
+        <div class="gauge"><div class="lbl"><img class="inline-icon" src="bilder/icons/deuterium/deuterium_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">⬡</span> Deuterium</div><div class="val">12.9k</div><div class="bar"><i style="width:22%"></i></div></div>
+        <div class="gauge"><div class="lbl"><img class="inline-icon" src="bilder/icons/dunkleMaterie/dunkleMaterie_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🌌</span> Dunkle Materie</div><div class="val">1.340</div><div class="bar"><i style="width:78%"></i></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section reveal">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow">SCHWARZMARKT</div>
+      <h2>Dunkle Materie öffnet Türen.</h2>
+      <p>Ein bewusst schlechter Kurs für den Notfall — nicht zum Farmen. Für alles andere:
+        Zeit ist die eigentliche Währung.</p>
+    </div>
+    <div class="chiprow">
+      <span class="chip gold">Sofortfertigstellung</span>
+      <span class="chip">Bautempo-Booster</span>
+      <span class="chip">Rohstoff-Booster</span>
+      <span class="chip">Rohstoffe direkt kaufen</span>
+    </div>
+  </div>
+</section>
+
+<section class="section reveal">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow">LEBENSFORMEN</div>
+      <h2>Vier Völker, vier Wege.</h2>
+      <p>Jeder Planet kann eine eigene Spezies ansiedeln — mit eigenen Boni für
+        Forschung, Werft und Kolonisierungskosten.</p>
+    </div>
+    <div class="species">
+      <div class="sp"><div class="glyph">👤</div><div class="name">Menschen</div><div class="desc">Handel &amp; Expansion</div></div>
+      <div class="sp"><div class="glyph">🪨</div><div class="name">Rock'tal</div><div class="desc">Rohstoffe &amp; Verteidigung</div></div>
+      <div class="sp"><div class="glyph">🤖</div><div class="name">Mechas</div><div class="desc">Werften &amp; Energie</div></div>
+      <div class="sp"><div class="glyph">👁</div><div class="name">Kaelesh</div><div class="desc">Artefakte &amp; Vorahnung</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section reveal" id="chronik">
+  <div class="wrap">
+    <div class="chronicle">
+      <div class="eyebrow">AUS DER CHRONIK</div>
+      <blockquote>„Wir nannten uns das Ewige Reich, weil wir glaubten, gebaut zu haben, was nie
+        enden würde. Wir hatten unrecht — aber vielleicht auf die einzige Art, die zählt:
+        Nichts, das gebaut wird, ist ewig. Nur das, was weitergegeben wird.“</blockquote>
+      <div class="attrib">— Omega-Artefakt, Kapitel 5</div>
+    </div>
+  </div>
+</section>
+
+<section class="finalcta reveal" id="start">
+  <div class="wrap">
+    <div class="eyebrow" style="justify-content:center">BEREIT ZUM START?</div>
+    <h2>Dein Imperium wartet auf eine Heimatwelt.</h2>
+    <p>Keine Installation, kein Konto bei Dritten — öffnen und spielen.</p>
+    <div class="ctas">
+      <a href="game.html" class="btn primary">▶ Jetzt spielen</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">AETHERIS — Echoes of an Eternal Empire · <span class="fver">v0.52.00 Open Beta</span> · Ein Indie-Solo-Projekt</div>
+</footer>
+
+<script>
+/* ---------- Starfield ---------- */
+(function(){
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+  let stars = [], w, h;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = document.documentElement.scrollHeight;
+    const count = Math.min(260, Math.floor((w*h)/9000));
+    stars = Array.from({length:count}, () => ({
+      x: Math.random()*w, y: Math.random()*h, r: Math.random()*1.3+0.2,
+      p: Math.random()*Math.PI*2, s: Math.random()*0.015+0.005
+    }));
+  }
+  function draw(t){
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = '#EDE4D3';
+    stars.forEach(st=>{
+      const tw = reduced ? 0.7 : 0.5 + 0.5*Math.sin(st.p + t*st.s);
+      ctx.globalAlpha = 0.15 + tw*0.55;
+      ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    if(!reduced) requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(draw);
+  if(reduced) draw(0);
+})();
+
+/* ---------- Orbit diagram builder (golden angle, wie im Spiel) ---------- */
+let orbitSunSeq = 0;
+function buildOrbit(container, opts){
+  opts = opts || {};
+  const slots = opts.slots || 7;
+  const sunType = opts.sunType || 'gelb'; // blau/gelb/rot/weiss/neutron — wie GALAXY_SUN_TYPES im Spiel
+  const sunId = 'sun' + (orbitSunSeq++);
+  const goldenAngle = 137.508;
+  const cx=250, cy=250, innerR=60, outerR=210;
+  const statuses = opts.statuses || Array.from({length:slots}, ()=> 'free');
+  const colors = { owned:'#7FA85A', home:'#D4AF37', foreign:'#C48888', free:'#4A3A2A' };
+  const labels = { owned:'Kolonisiert', home:'Heimatwelt', foreign:'Fremdes / Unbekanntes Imperium', free:'Frei' };
+
+  let svg = `<svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">`;
+  for(let i=0;i<slots;i++){
+    const r = slots>1 ? innerR + i*(outerR-innerR)/(slots-1) : innerR;
+    svg += `<circle class="ring" cx="${cx}" cy="${cy}" r="${r.toFixed(1)}"/>`;
+  }
+  svg += `<circle class="sector" cx="${cx}" cy="${cy}" r="${outerR+22}"/>`;
+  // Echtes Sonnenbild wie im Galaxie-View des Spiels (bilder/sonnen/<typ>/<typ>_1.png),
+  // fällt bei fehlendem Bild automatisch auf die Emoji-Sonne zurück.
+  svg += `<clipPath id="clip${sunId}"><circle cx="${cx}" cy="${cy}" r="16"/></clipPath>`;
+  svg += `<circle cx="${cx}" cy="${cy}" r="16" fill="#D4AF37" opacity="0.85"/>`;
+  svg += `<image id="${sunId}" href="bilder/sonnen/${sunType}/${sunType}_1.png" x="${cx-16}" y="${cy-16}" width="32" height="32" clip-path="url(#clip${sunId})" preserveAspectRatio="xMidYMid slice" onerror="this.setAttribute('display','none')"/>`;
+
+  svg += `<g class="orbit-group">`;
+  for(let i=0;i<slots;i++){
+    const slot = i+1;
+    const r = slots>1 ? innerR + i*(outerR-innerR)/(slots-1) : innerR;
+    const angleDeg = (slot*goldenAngle)%360 - 90;
+    const angleRad = angleDeg*Math.PI/180;
+    const x = cx + r*Math.cos(angleRad), y = cy + r*Math.sin(angleRad);
+    const status = statuses[i] || 'free';
+    const color = colors[status];
+    svg += `<g class="orbit-node" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" data-label="${labels[status]}" style="color:${color}">
+      <g class="counter-spin" transform="translate(${x.toFixed(1)},${y.toFixed(1)})">
+        <circle class="core" r="11" stroke="${color}" fill-opacity="0.9"/>
+        <circle r="15" fill="transparent"/>
+      </g>
+    </g>`;
+  }
+  svg += `</g></svg>`;
+  container.innerHTML = svg;
+
+  // Tooltip
+  const tip = document.createElement('div');
+  tip.className = 'tip';
+  container.style.position = container.style.position || 'relative';
+  container.appendChild(tip);
+
+  container.querySelectorAll('.orbit-node').forEach(node=>{
+    node.addEventListener('mouseenter', (e)=>{
+      const rect = container.getBoundingClientRect();
+      const scale = rect.width/500;
+      const x = parseFloat(node.dataset.x)*scale, y = parseFloat(node.dataset.y)*scale;
+      tip.textContent = node.dataset.label;
+      tip.style.left = x+'px'; tip.style.top = y+'px';
+      tip.classList.add('show');
+    });
+    node.addEventListener('mouseleave', ()=> tip.classList.remove('show'));
+  });
+}
+
+buildOrbit(document.getElementById('scarcityOrbit'), {
+  slots:7, sunType:'neutron', statuses:['foreign','free','foreign','owned','foreign','foreign','home']
+});
+
+
+/* ---------- Scroll reveal ---------- */
+(function(){
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+  }, { threshold:0.12 });
+  document.querySelectorAll('.reveal').forEach(el=> io.observe(el));
+})();
+</script>
+
+</body>
+</html>
