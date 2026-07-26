@@ -44,8 +44,10 @@
     display:flex; align-items:center; justify-content:space-between;
     padding:18px 28px; backdrop-filter:blur(6px); background:linear-gradient(180deg, rgba(16,12,10,0.85), rgba(16,12,10,0));
   }
-  .topnav .logo{ font-family:'Cinzel',serif; font-weight:700; font-size:19px; color:var(--gold); letter-spacing:1px; }
+  .topnav .logo{ font-family:'Cinzel',serif; font-weight:700; font-size:19px; color:var(--gold); letter-spacing:1px; position:relative; z-index:2; }
   .topnav .logo span{ color:var(--red); }
+  .topnav .logo img{ height:92px; width:auto; display:block; margin:-30px 0; position:relative; }
+  @media (max-width:720px){ .topnav .logo img{ height:64px; margin:-16px 0; } }
   .topnav .navlinks{ display:flex; gap:26px; font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:1px; }
   .topnav .navlinks a{ color:var(--gold-dim); text-decoration:none; transition:color .15s; }
   .topnav .navlinks a:hover{ color:var(--gold); }
@@ -55,7 +57,9 @@
     transition:background .15s,border-color .15s;
   }
   .topnav .navcta:hover{ background:#221A10; border-color:var(--gold); }
+  .topnav .navctas{ display:flex; align-items:center; gap:10px; }
   @media (max-width:720px){ .topnav .navlinks{ display:none; } }
+  @media (max-width:480px){ .topnav .navcta{ padding:8px 11px; } }
 
   /* ---------- Buttons ---------- */
   .btn{
@@ -73,15 +77,25 @@
     min-height:100svh; display:flex; flex-direction:column; align-items:center; justify-content:center;
     text-align:center; padding:140px 28px 80px; overflow:hidden;
   }
-  .orbit-group{ transform-origin:250px 250px; animation:orbitspin 240s linear infinite; pointer-events:auto; }
+  /* Statisches Sonnensystem — keine Rotation mehr (weder Orbit noch Eigendrehung),
+     damit nichts mehr "spinnt" bzw. ruckelt/flackert. Positionen bleiben fix. */
+  .orbit-group{ transform-origin:250px 250px; pointer-events:auto; }
   .orbit-node{ cursor:pointer; }
   .orbit-node circle.core{ fill:#181310; stroke-width:1.6; transition:stroke .2s,filter .2s; }
   .orbit-node:hover circle.core{ filter:drop-shadow(0 0 6px currentColor); }
-  .orbit-node .counter-spin{ transform-origin:center; animation:orbitspin-rev 240s linear infinite; }
-  @keyframes orbitspin{ to{ transform:rotate(360deg); } }
-  @keyframes orbitspin-rev{ to{ transform:rotate(-360deg); } }
+  .orbit-node:hover .planet-spin{ filter:drop-shadow(0 0 5px currentColor); }
+  .orbit-node .counter-spin{ transform-box:fill-box; transform-origin:center; }
+  .planet-spin{ transform-box:fill-box; transform-origin:center; }
+  /* Feste (nicht mitrotierende) Licht/Schatten-Überlagerung je Planet: Glanzpunkt oben links,
+     Terminator-Schatten unten rechts — täuscht Kugelvolumen auf einem flachen PNG vor. */
+  .planet-shade{ pointer-events:none; }
 
   .hero-inner{ position:relative; z-index:3; max-width:760px; }
+  /* Logo-Bild über dem Titel — versucht bilder/logo.png zu laden; existiert die Datei (noch) nicht,
+     bleibt der Block einfach leer und nur der Text-Titel darunter ist sichtbar (kein kaputtes Icon). */
+  .hero-logo{ display:flex; justify-content:center; margin-bottom:10px; }
+  .hero-logo img{ max-width:min(600px,88vw); height:auto; filter:drop-shadow(0 8px 40px rgba(212,175,55,0.4)); }
+  .hero-logo:empty{ display:none; }
   .hero .eyebrow{ justify-content:center; }
   .hero .eyebrow::before,.hero .eyebrow::after{ content:""; width:22px; height:1px; background:var(--gold-soft); }
   .hero h1{ font-size:clamp(48px,9vw,96px); line-height:0.95; }
@@ -115,14 +129,23 @@
   .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
   @media (max-width:860px){ .grid3{ grid-template-columns:1fr; } }
   .card{
-    background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:28px 26px;
+    position:relative; overflow:hidden;
+    background:#181310; border:1px solid var(--line); border-radius:14px;
     transition:border-color .2s, transform .2s;
   }
   .card:hover{ border-color:var(--gold-soft); transform:translateY(-3px); }
-  .card .icon{ font-size:26px; display:block; margin-bottom:16px; }
-  .card .icon-img{ width:26px; height:26px; object-fit:contain; }
-  .card h3{ font-size:18px; color:var(--gold); font-family:'Cinzel',serif; }
-  .card p{ color:#B8AC98; font-size:15px; margin-top:10px; }
+  /* Gleiches Prinzip wie die Werft-/Mehr-Kacheln im Spiel (thumb-bg-img): echtes Bild
+     füllt die ganze Kachel, ein dunkler Verlauf sorgt für lesbaren Text darüber.
+     Lädt das Bild nicht, greift automatisch das Emoji-Fallback (span.icon). */
+  .card-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+  .card::after{
+    content:""; position:absolute; inset:0; z-index:0;
+    background:linear-gradient(180deg, rgba(16,12,10,0.25) 0%, rgba(16,12,10,0.70) 55%, rgba(16,12,10,0.96) 100%);
+  }
+  .card-body{ position:relative; z-index:1; padding:28px 26px; }
+  .card .icon{ font-size:26px; display:block; margin-bottom:16px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.9)); }
+  .card h3{ font-size:18px; color:var(--gold); font-family:'Cinzel',serif; text-shadow:0 2px 6px rgba(0,0,0,0.95); }
+  .card p{ color:#F0E6D4; font-size:15px; margin-top:10px; text-shadow:0 1px 4px rgba(0,0,0,0.9); }
 
   /* ---------- Scarcity / signature section ---------- */
   .scarcity{ display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; }
@@ -145,12 +168,21 @@
   .hud{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:30px; }
   .hud-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
   @media (max-width:760px){ .hud-row{ grid-template-columns:repeat(2,1fr); } }
-  .gauge{ background:var(--bg2); border:1px solid #2A1A1A; border-radius:12px; padding:14px 12px; text-align:center; }
-  .gauge .lbl{ font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:1px; color:var(--gold-dim); text-transform:uppercase; }
-  .inline-icon{ width:12px; height:12px; object-fit:contain; vertical-align:-1px; margin-right:3px; }
-  .gauge .val{ font-family:'Cinzel',serif; font-weight:700; font-size:20px; margin-top:6px; color:var(--cream); }
-  .gauge .bar{ height:5px; background:#2A1A1A; border-radius:3px; margin-top:10px; overflow:hidden; }
-  .gauge .bar i{ display:block; height:100%; background:var(--gold); border-radius:3px; }
+  .gauge{
+    position:relative; overflow:hidden;
+    background:#181310; border:1px solid #2A1A1A; border-radius:12px; text-align:center;
+  }
+  /* Ressourcen-Icon als volles Kachelbild (wie Werft-Kacheln), dunkler Verlauf für Kontrast. */
+  .gauge-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+  .gauge::after{
+    content:""; position:absolute; inset:0; z-index:0;
+    background:linear-gradient(180deg, rgba(16,12,10,0.20) 0%, rgba(16,12,10,0.62) 45%, rgba(16,12,10,0.94) 100%);
+  }
+  .gauge-body{ position:relative; z-index:1; padding:14px 12px; }
+  .gauge .lbl{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:1px; color:#E4D9C4; text-transform:uppercase; text-shadow:0 1px 4px rgba(0,0,0,0.95); }
+  .gauge .val{ font-family:'Cinzel',serif; font-weight:700; font-size:21px; margin-top:6px; color:#FFFFFF; text-shadow:0 1px 5px rgba(0,0,0,0.95); }
+  .gauge .bar{ height:5px; background:rgba(0,0,0,0.55); border-radius:3px; margin-top:10px; overflow:hidden; }
+  .gauge .bar i{ display:block; height:100%; background:var(--gold); border-radius:3px; box-shadow:0 0 6px rgba(212,175,55,0.7); }
 
   /* ---------- Black market chips ---------- */
   .chiprow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:22px; }
@@ -160,13 +192,56 @@
   }
   .chip.gold{ border-color:var(--gold-soft); color:var(--gold); }
 
-  /* ---------- Species row ---------- */
+  /* ---------- Species row (gleicher Kachel-Stil wie .card/.gauge: echtes Bild + Verlauf) ---------- */
   .species{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:10px; }
   @media (max-width:760px){ .species{ grid-template-columns:repeat(2,1fr); } }
-  .species .sp{ text-align:center; padding:22px 12px; border:1px solid var(--line); border-radius:12px; background:var(--panel); }
-  .species .sp .glyph{ font-size:28px; }
-  .species .sp .name{ font-family:'Cinzel',serif; color:var(--gold); font-size:14px; margin-top:10px; }
-  .species .sp .desc{ font-size:12.5px; color:var(--gold-dim); margin-top:4px; }
+  .species .sp{
+    position:relative; overflow:hidden; text-align:center; padding:22px 12px;
+    border:1px solid var(--line); border-radius:12px; background:#181310; min-height:150px;
+  }
+  .species .sp-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+  .species .sp::after{
+    content:""; position:absolute; inset:0; z-index:0;
+    background:linear-gradient(180deg, rgba(16,12,10,0.20) 0%, rgba(16,12,10,0.60) 45%, rgba(16,12,10,0.94) 100%);
+  }
+  .species .sp-body{ position:relative; z-index:1; }
+  .species .sp .glyph{ font-size:28px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.9)); }
+  .species .sp .name{ font-family:'Cinzel',serif; color:var(--gold); font-size:14px; margin-top:10px; text-shadow:0 2px 6px rgba(0,0,0,0.95); }
+  .species .sp .desc{ font-size:12.5px; color:#E4D9C4; margin-top:4px; text-shadow:0 1px 4px rgba(0,0,0,0.9); }
+
+  /* ---------- Roadmap ---------- */
+  .roadmap-cols{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; align-items:start; }
+  @media (max-width:900px){ .roadmap-cols{ grid-template-columns:1fr; } }
+  .roadmap-col{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:26px 24px; }
+  .roadmap-status{
+    display:flex; align-items:center; gap:9px; font-family:'IBM Plex Mono',monospace; font-size:11px;
+    letter-spacing:1.5px; text-transform:uppercase; color:var(--gold-dim); margin-bottom:20px;
+  }
+  .roadmap-status .dot{ width:9px; height:9px; border-radius:50%; flex:none; }
+  .roadmap-item + .roadmap-item{ margin-top:20px; padding-top:20px; border-top:1px solid var(--line); }
+  .roadmap-item .rname{ font-family:'Cinzel',serif; color:var(--cream); font-size:15.5px; font-weight:700; }
+  .roadmap-item .rdesc{ font-size:13.5px; color:#B8AC98; margin-top:6px; line-height:1.55; }
+  .roadmap-idea-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:11px; }
+  .roadmap-idea-list li{ font-size:13.5px; color:#B8AC98; padding-left:16px; position:relative; line-height:1.5; }
+  .roadmap-idea-list li::before{ content:"–"; position:absolute; left:0; color:var(--gold-dim); }
+  .roadmap-note{ margin-top:26px; font-size:12px; color:var(--gold-dim); font-style:italic; }
+
+  /* ---------- Dyson-Sphäre: bewegtes Pseudo-3D-Modell (reines SVG/CSS, keine externe Lib nötig) ----------
+     Drei ineinander verschachtelte, gekippte Ellipsen-"Ringe" um einen glühenden Kern, jede mit eigener
+     Drehgeschwindigkeit/-richtung. Da eine Ellipse (im Gegensatz zum Kreis) beim Rotieren um den eigenen
+     Mittelpunkt ihre Achsenausrichtung sichtbar ändert, entsteht ein taumelnder, echt dreidimensional
+     wirkender Effekt — ganz ohne WebGL/Three.js. Farben = Spielpalette (Gold/Rot/Creme). */
+  .roadmap-dyson{ width:150px; max-width:58%; margin:18px auto 4px; aspect-ratio:1/1; }
+  .roadmap-dyson svg{ width:100%; height:100%; overflow:visible; }
+  .dyson-ring-a{ transform-box:fill-box; transform-origin:center; animation:dysonspin 22s linear infinite; }
+  .dyson-ring-b{ transform-box:fill-box; transform-origin:center; animation:dysonspin 34s linear infinite reverse; }
+  .dyson-ring-c{ transform-box:fill-box; transform-origin:center; animation:dysonspin 50s linear infinite; }
+  .dyson-core{ animation:dysoncore 5s ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
+  @keyframes dysonspin{ to{ transform:rotate(360deg); } }
+  @keyframes dysoncore{ 0%,100%{ opacity:0.9; } 50%{ opacity:1; } }
+  @media (prefers-reduced-motion:reduce){
+    .dyson-ring-a,.dyson-ring-b,.dyson-ring-c,.dyson-core{ animation:none !important; }
+  }
 
   /* ---------- Chronicle pull-quote ---------- */
   .chronicle{
@@ -198,7 +273,7 @@
 
   @media (prefers-reduced-motion:reduce){
     html{ scroll-behavior:auto; }
-    .orbit-group,.counter-spin,.scroll-hint{ animation:none !important; }
+    .scroll-hint{ animation:none !important; }
     .reveal{ transition:none; opacity:1; transform:none; }
   }
 </style>
@@ -208,31 +283,39 @@
 <canvas id="stars"></canvas>
 
 <div class="topnav">
-  <div class="logo">AETHERIS<span>.</span></div>
+  <div class="logo" id="navLogo">AETHERIS<span>.</span></div>
   <div class="navlinks">
     <a href="#imperium">Imperium</a>
     <a href="#galaxie">Galaxie</a>
     <a href="#autopilot">Autopilot</a>
+    <a href="#roadmap">Roadmap</a>
     <a href="#chronik">Chronik</a>
   </div>
-  <a href="game.html" class="navcta">Spielen</a>
+  <div class="navctas">
+    <a href="AETHERIS.apk" class="navcta" download>⇩ Android</a>
+    <a href="game.html" class="navcta">Spielen</a>
+  </div>
 </div>
 
 <section class="hero">
   <div class="hero-inner">
     <div class="eyebrow">BROWSERBASIERTES IMPERIUM · KEIN DOWNLOAD</div>
-    <h1>AETHERIS<span>.</span></h1>
-    <div class="sub">Echoes of an Eternal Empire</div>
+    <div class="hero-logo" id="heroLogo"></div>
+    <div id="heroTitleText">
+      <h1>AETHERIS<span>.</span></h1>
+      <div class="sub">Echoes of an Eternal Empire</div>
+    </div>
     <p class="pitch">Gründe eine Kolonie, baue eine Flotte auf und handle mit Dunkler Materie —
       in einer Galaxie, die sich weiterdreht, auch wenn du gerade nicht online bist.</p>
     <div class="ctas">
-      <a href="game.html" class="btn primary">▶ Jetzt spielen</a>
+      <a href="game.html" class="btn primary">Jetzt spielen</a>
       <a href="#galaxie" class="btn">Galaxie ansehen</a>
+      <a href="AETHERIS.apk" class="btn" download>⇩ Android APK</a>
     </div>
     <div class="meta">
       <span>v0.52.00 <b>Open Beta</b></span>
       <span>30 Sternensysteme</span>
-      <span>Android-App in Vorbereitung</span>
+      <span>Auch als Android-APK</span>
     </div>
   </div>
   <div class="scroll-hint">Scrollen</div>
@@ -248,22 +331,31 @@
     </div>
     <div class="grid3">
       <div class="card">
-        <span class="icon"><img class="icon-img" src="bilder/icons/navPlanet/navPlanet_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🪐</span></span>
-        <h3>Sternensysteme</h3>
-        <p>Kolonisiere freie Planeten in 30 benannten Systemen — jeder Typ mit eigenen
-          Rohstoff-Boni, von kargen Gesteinswelten bis zu seltenen Ringwelten.</p>
+        <img class="card-bg" src="bilder/icons/navGalaxie/navGalaxie_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span class="icon" style="display:none">🌌</span>
+        <div class="card-body">
+          <h3>Sternensysteme</h3>
+          <p>Kolonisiere freie Planeten in 30 benannten Systemen — jeder Typ mit eigenen
+            Rohstoff-Boni, von kargen Gesteinswelten bis zu seltenen Ringwelten.</p>
+        </div>
       </div>
       <div class="card">
-        <span class="icon"><img class="icon-img" src="bilder/icons/navFlotte/navFlotte_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🛰️</span></span>
-        <h3>Flotten &amp; Verteidigung</h3>
-        <p>Baue Kolonieschiffe, Kampfflotten und Verteidigungsanlagen — und wehre
-          Piratenüberfälle im Tiefraumsektor ab, bevor sie deine Kolonie erreichen.</p>
+        <img class="card-bg" src="bilder/icons/navFlotte/navFlotte_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span class="icon" style="display:none">🛰️</span>
+        <div class="card-body">
+          <h3>Flotten &amp; Verteidigung</h3>
+          <p>Baue Kolonieschiffe, Kampfflotten und Verteidigungsanlagen — und wehre
+            Piratenüberfälle im Tiefraumsektor ab, bevor sie deine Kolonie erreichen.</p>
+        </div>
       </div>
       <div class="card">
-        <span class="icon"><img class="icon-img" src="bilder/monde/natuerlich/natuerlich_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🌕</span></span>
-        <h3>Monde &amp; Dunkle Materie</h3>
-        <p>Künstliche Monde fördern Dunkle Materie — die Premium-Währung für den
-          Schwarzmarkt, imperiumsweit geteilt über alle deine Kolonien.</p>
+        <img class="card-bg" src="bilder/monde/natuerlich/natuerlich_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span class="icon" style="display:none">🌕</span>
+        <div class="card-body">
+          <h3>Monde &amp; Dunkle Materie</h3>
+          <p>Künstliche Monde fördern Dunkle Materie — die Premium-Währung für den
+            Schwarzmarkt, imperiumsweit geteilt über alle deine Kolonien.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -296,17 +388,30 @@
 <section class="section reveal" id="autopilot">
   <div class="wrap">
     <div class="head">
-      <div class="eyebrow">AUCH OFFLINE AKTIV</div>
-      <h2>Ein Autopilot, der mitdenkt.</h2>
-      <p>Er wählt Verteidigung nach echter Bedrohungslage, skaliert Einheiten nach
-        Kosten-Nutzen und baut eigenständig — solange du ihn mit Treibstoff versorgst.</p>
+      <div class="eyebrow">AUCH OFFLINE AKTIV · IN ENTWICKLUNG</div>
+      <h2>Ein Autopilot, der mitdenken soll.</h2>
+      <p>Geplant: Er wählt Verteidigung nach echter Bedrohungslage, skaliert Einheiten nach
+        Kosten-Nutzen und baut eigenständig weiter — solange du ihn mit Treibstoff versorgst.
+        Diese Funktion befindet sich noch im Aufbau und wird laufend erweitert.</p>
     </div>
     <div class="hud">
       <div class="hud-row">
-        <div class="gauge"><div class="lbl"><img class="inline-icon" src="bilder/icons/metal/metal_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">⛏</span> Metall</div><div class="val">48.2k</div><div class="bar"><i style="width:64%"></i></div></div>
-        <div class="gauge"><div class="lbl"><img class="inline-icon" src="bilder/icons/crystal/crystal_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">◆</span> Kristall</div><div class="val">29.6k</div><div class="bar"><i style="width:41%"></i></div></div>
-        <div class="gauge"><div class="lbl"><img class="inline-icon" src="bilder/icons/deuterium/deuterium_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">⬡</span> Deuterium</div><div class="val">12.9k</div><div class="bar"><i style="width:22%"></i></div></div>
-        <div class="gauge"><div class="lbl"><img class="inline-icon" src="bilder/icons/dunkleMaterie/dunkleMaterie_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🌌</span> Dunkle Materie</div><div class="val">1.340</div><div class="bar"><i style="width:78%"></i></div></div>
+        <div class="gauge">
+          <img class="gauge-bg" src="bilder/icons/metal/metal_1.png" onerror="this.style.display='none'">
+          <div class="gauge-body"><div class="lbl">Metall</div><div class="val">48.2k</div><div class="bar"><i style="width:64%"></i></div></div>
+        </div>
+        <div class="gauge">
+          <img class="gauge-bg" src="bilder/icons/crystal/crystal_1.png" onerror="this.style.display='none'">
+          <div class="gauge-body"><div class="lbl">Kristall</div><div class="val">29.6k</div><div class="bar"><i style="width:41%"></i></div></div>
+        </div>
+        <div class="gauge">
+          <img class="gauge-bg" src="bilder/icons/deuterium/deuterium_1.png" onerror="this.style.display='none'">
+          <div class="gauge-body"><div class="lbl">Deuterium</div><div class="val">12.9k</div><div class="bar"><i style="width:22%"></i></div></div>
+        </div>
+        <div class="gauge">
+          <img class="gauge-bg" src="bilder/icons/dunkleMaterie/dunkleMaterie_1.png" onerror="this.style.display='none'">
+          <div class="gauge-body"><div class="lbl">Dunkle Materie</div><div class="val">1.340</div><div class="bar"><i style="width:78%"></i></div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -338,11 +443,105 @@
         Forschung, Werft und Kolonisierungskosten.</p>
     </div>
     <div class="species">
-      <div class="sp"><div class="glyph">👤</div><div class="name">Menschen</div><div class="desc">Handel &amp; Expansion</div></div>
-      <div class="sp"><div class="glyph">🪨</div><div class="name">Rock'tal</div><div class="desc">Rohstoffe &amp; Verteidigung</div></div>
-      <div class="sp"><div class="glyph">🤖</div><div class="name">Mechas</div><div class="desc">Werften &amp; Energie</div></div>
-      <div class="sp"><div class="glyph">👁</div><div class="name">Kaelesh</div><div class="desc">Artefakte &amp; Vorahnung</div></div>
+      <div class="sp">
+        <img class="sp-bg" src="bilder/lebensformen/human/human_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <div class="glyph" style="display:none">👤</div>
+        <div class="sp-body"><div class="name">Menschen</div><div class="desc">Handel &amp; Expansion</div></div>
+      </div>
+      <div class="sp">
+        <img class="sp-bg" src="bilder/lebensformen/rocktal/rocktal_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <div class="glyph" style="display:none">🪨</div>
+        <div class="sp-body"><div class="name">Rock'tal</div><div class="desc">Rohstoffe &amp; Verteidigung</div></div>
+      </div>
+      <div class="sp">
+        <img class="sp-bg" src="bilder/lebensformen/mecha/mecha_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <div class="glyph" style="display:none">🤖</div>
+        <div class="sp-body"><div class="name">Mechas</div><div class="desc">Werften &amp; Energie</div></div>
+      </div>
+      <div class="sp">
+        <img class="sp-bg" src="bilder/lebensformen/kaelesh/kaelesh_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <div class="glyph" style="display:none">👁</div>
+        <div class="sp-body"><div class="name">Kaelesh</div><div class="desc">Artefakte &amp; Vorahnung</div></div>
+      </div>
     </div>
+  </div>
+</section>
+
+<section class="section reveal" id="roadmap">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow">ROADMAP</div>
+      <h2>Was als Nächstes kommt.</h2>
+      <p>Alles kostenlos, keine Bezahlinhalte.</p>
+    </div>
+    <div class="roadmap-cols">
+      <div class="roadmap-col">
+        <div class="roadmap-status"><span class="dot" style="background:#D4AF37"></span> In Arbeit</div>
+        <div class="roadmap-item">
+          <div class="rname">Dyson-Sphäre</div>
+          <div class="roadmap-dyson" aria-hidden="true">
+            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="dysonGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#D4AF37" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#D4AF37" stop-opacity="0"/>
+                </radialGradient>
+                <radialGradient id="dysonCoreGrad" cx="38%" cy="34%" r="68%">
+                  <stop offset="0%" stop-color="#FFF6DD"/>
+                  <stop offset="40%" stop-color="#D4AF37"/>
+                  <stop offset="100%" stop-color="#7A5A18"/>
+                </radialGradient>
+              </defs>
+              <circle cx="100" cy="100" r="58" fill="url(#dysonGlow)"/>
+              <circle class="dyson-core" cx="100" cy="100" r="19" fill="url(#dysonCoreGrad)"/>
+              <g class="dyson-ring-a" transform="rotate(-14 100 100)">
+                <ellipse cx="100" cy="100" rx="88" ry="27" fill="none" stroke="#D4AF37" stroke-width="2.4" stroke-dasharray="9 7" opacity="0.9"/>
+                <circle cx="188" cy="100" r="3" fill="#EDE4D3"/>
+                <circle cx="12" cy="100" r="3" fill="#EDE4D3"/>
+              </g>
+              <g class="dyson-ring-b" transform="rotate(10 100 100)">
+                <ellipse cx="100" cy="100" rx="67" ry="19" fill="none" stroke="#C4402E" stroke-width="1.7" stroke-dasharray="4 8" opacity="0.65"/>
+              </g>
+              <g class="dyson-ring-c" transform="rotate(-5 100 100)">
+                <ellipse cx="100" cy="100" rx="103" ry="13" fill="none" stroke="#8A7A6A" stroke-width="1.2" stroke-dasharray="2 6" opacity="0.5"/>
+              </g>
+            </svg>
+          </div>
+          <div class="rdesc">Neues Endgame-Ziel. Bauteile werden auf unterschiedlichen Planetentypen
+            produziert, auf einem künstlichen Mond montiert und zur Sonne verschickt. Mit eigener
+            3D-Ansicht, in der man den Baufortschritt live sehen kann.</div>
+        </div>
+      </div>
+      <div class="roadmap-col">
+        <div class="roadmap-status"><span class="dot" style="background:#7FA0C4"></span> Als Nächstes geplant</div>
+        <div class="roadmap-item">
+          <div class="rname">Lebendige KI-Imperien</div>
+          <div class="rdesc">2 bis 10 computergesteuerte Reiche, die im Hintergrund eigenständig
+            wachsen, kolonisieren und miteinander in Konflikt geraten, statt einfach nur Planeten
+            zu blockieren.</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="rname">Screaming-Sun-Expeditionen</div>
+          <div class="rdesc">Eine neue, storygetriebene Expeditionslinie in eine besonders schwer
+            erreichbare Sondergalaxie, freigeschaltet über die Dyson-Sphäre.</div>
+        </div>
+      </div>
+      <div class="roadmap-col">
+        <div class="roadmap-status"><span class="dot" style="background:#8A7A6A"></span> Ideen für spätere Updates</div>
+        <ul class="roadmap-idea-list">
+          <li>Browser-Benachrichtigungen (z. B. wenn eine Flotte ankommt)</li>
+          <li>Einsteiger-Tutorial für neue Kommandanten</li>
+          <li>Zufallsereignisse im All (Piratenüberfälle, Handelskarawanen)</li>
+          <li>Animierte Kampfberichte statt reinem Text</li>
+          <li>Wachstumsdiagramme für die eigene Statistik</li>
+          <li>Visueller Tech-Baum</li>
+          <li>Kosmetische Anpassungen (Farbschemata, Icon-Varianten)</li>
+          <li>Mehrsprachigkeit</li>
+        </ul>
+      </div>
+    </div>
+    <div class="roadmap-note">Diese Liste wird laufend erweitert und ist keine feste Zusage für
+      Zeitpunkte — Reihenfolge kann sich ändern.</div>
   </div>
 </section>
 
@@ -364,7 +563,8 @@
     <h2>Dein Imperium wartet auf eine Heimatwelt.</h2>
     <p>Keine Installation, kein Konto bei Dritten — öffnen und spielen.</p>
     <div class="ctas">
-      <a href="game.html" class="btn primary">▶ Jetzt spielen</a>
+      <a href="game.html" class="btn primary">Jetzt spielen</a>
+      <a href="AETHERIS.apk" class="btn" download>⇩ Android APK herunterladen</a>
     </div>
   </div>
 </section>
@@ -407,8 +607,43 @@
   if(reduced) draw(0);
 })();
 
+/* ---------- Logo-Fallback (Nav + Hero) ----------
+   Probiert bilder/logo.png, dann logo/aetheris_logo.svg. Lädt eines von beiden, ersetzt es
+   das Bild in Nav UND Hero und blendet im Hero den Text-Schriftzug aus (kein doppeltes Branding).
+   Lädt keines von beiden, bleiben die bestehenden Text-Fallbacks (Nav-Text bzw. Hero-Titel) sichtbar. */
+(function initLogos(){
+  const heroSlot = document.getElementById('heroLogo');
+  const navSlot = document.getElementById('navLogo');
+  const heroText = document.getElementById('heroTitleText');
+  const CANDIDATES = ['bilder/logo.png', 'logo/aetheris_logo.svg'];
+  function apply(src){
+    if(heroSlot){
+      const img = document.createElement('img');
+      img.src = src; img.alt = 'AETHERIS — Echoes of an Eternal Empire';
+      heroSlot.appendChild(img);
+    }
+    if(heroText) heroText.style.display = 'none';
+    if(navSlot){
+      const img2 = document.createElement('img');
+      img2.src = src; img2.alt = 'AETHERIS';
+      navSlot.innerHTML = ''; navSlot.appendChild(img2);
+    }
+  }
+  function tryNext(i){
+    if(i >= CANDIDATES.length) return; // kein Bild gefunden -> Text-Fallbacks bleiben wie sie sind
+    const test = new Image();
+    test.onload = () => apply(CANDIDATES[i]);
+    test.onerror = () => tryNext(i+1);
+    test.src = CANDIDATES[i];
+  }
+  tryNext(0);
+})();
+
 /* ---------- Orbit diagram builder (golden angle, wie im Spiel) ---------- */
 let orbitSunSeq = 0;
+// Gleiche Planetentyp-Keys/Reihenfolge wie PLANET_TYPES im Spiel (erste 7 Slots) —
+// damit die Landingpage dieselben Planetenbilder zeigt wie das eigentliche Galaxie-View.
+const ORBIT_PLANET_KEYS = ["vulkan","wueste","erdaehnlich","gestein","dschungel","ozean","karg","toxisch","eis","gasriese","ringwelt"];
 function buildOrbit(container, opts){
   opts = opts || {};
   const slots = opts.slots || 7;
@@ -421,6 +656,18 @@ function buildOrbit(container, opts){
   const labels = { owned:'Kolonisiert', home:'Heimatwelt', foreign:'Fremdes / Unbekanntes Imperium', free:'Frei' };
 
   let svg = `<svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<defs>
+    <radialGradient id="shine${sunId}" cx="34%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.55"/>
+      <stop offset="35%" stop-color="#fff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="shadow${sunId}" cx="66%" cy="72%" r="75%">
+      <stop offset="0%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="55%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.55"/>
+    </radialGradient>
+  </defs>`;
   for(let i=0;i<slots;i++){
     const r = slots>1 ? innerR + i*(outerR-innerR)/(slots-1) : innerR;
     svg += `<circle class="ring" cx="${cx}" cy="${cy}" r="${r.toFixed(1)}"/>`;
@@ -431,6 +678,7 @@ function buildOrbit(container, opts){
   svg += `<clipPath id="clip${sunId}"><circle cx="${cx}" cy="${cy}" r="16"/></clipPath>`;
   svg += `<circle cx="${cx}" cy="${cy}" r="16" fill="#D4AF37" opacity="0.85"/>`;
   svg += `<image id="${sunId}" href="bilder/sonnen/${sunType}/${sunType}_1.png" x="${cx-16}" y="${cy-16}" width="32" height="32" clip-path="url(#clip${sunId})" preserveAspectRatio="xMidYMid slice" onerror="this.setAttribute('display','none')"/>`;
+  svg += `<circle cx="${cx}" cy="${cy}" r="16" fill="url(#shine${sunId})" clip-path="url(#clip${sunId})"/>`;
 
   svg += `<g class="orbit-group">`;
   for(let i=0;i<slots;i++){
@@ -441,9 +689,19 @@ function buildOrbit(container, opts){
     const x = cx + r*Math.cos(angleRad), y = cy + r*Math.sin(angleRad);
     const status = statuses[i] || 'free';
     const color = colors[status];
-    svg += `<g class="orbit-node" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" data-label="${labels[status]}" style="color:${color}">
-      <g class="counter-spin" transform="translate(${x.toFixed(1)},${y.toFixed(1)})">
-        <circle class="core" r="11" stroke="${color}" fill-opacity="0.9"/>
+    const pKey = ORBIT_PLANET_KEYS[i % ORBIT_PLANET_KEYS.length];
+    const nodeId = `${sunId}p${i}`;
+    svg += `<g class="orbit-node" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" data-label="${labels[status]}" style="color:${color}" transform="translate(${x.toFixed(1)},${y.toFixed(1)})">
+      <g class="counter-spin">
+        <circle class="core" r="11.5" stroke="${color}" fill="${color}" fill-opacity="0.9"/>
+        <clipPath id="clip${nodeId}"><circle r="11"/></clipPath>
+        <g class="planet-spin">
+          <image href="bilder/planeten/${pKey}/${pKey}_1.png" x="-11" y="-11" width="22" height="22"
+            clip-path="url(#clip${nodeId})" preserveAspectRatio="xMidYMid slice"
+            onerror="this.setAttribute('display','none')"/>
+        </g>
+        <circle class="planet-shade" r="11" fill="url(#shine${sunId})" clip-path="url(#clip${nodeId})"/>
+        <circle class="planet-shade" r="11" fill="url(#shadow${sunId})" clip-path="url(#clip${nodeId})"/>
         <circle r="15" fill="transparent"/>
       </g>
     </g>`;
