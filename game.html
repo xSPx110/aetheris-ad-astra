@@ -759,7 +759,7 @@
     <canvas class="warp-canvas" id="warpGate"></canvas>
     <div class="game-logo" id="logoGate"></div>
     <div class="tap-hint" id="startGateBtn">Berühren zum Start</div>
-    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.52.00 Beta</div>
+    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.00 Beta</div>
   </div>
 
   <div class="title-screen hidden" id="titleScreen">
@@ -776,7 +776,7 @@
       <button class="menu-btn" id="titleMusicBtn" style="font-size:11px;width:100%">🎵 Musik</button>
       <input type="range" class="music-volume-input" id="titleMusicVolume" min="0" max="1" step="0.05" style="width:130px;margin-top:8px;accent-color:#D4AF37;display:block">
     </div>
-    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.52.00 Beta</div>
+    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.00 Beta</div>
   </div>
   <div class="header">
     <div class="title-row">
@@ -5780,9 +5780,9 @@ function claimAchievement(key) {
   const a = ACHIEVEMENTS.find(x => x.key === key);
   if (!a || !a.check()) return;
   const active = planets[activePlanetId];
-  active.resources.metal = Math.min(capFor(active, "metal"), active.resources.metal + a.reward.metal);
-  active.resources.crystal = Math.min(capFor(active, "crystal"), active.resources.crystal + a.reward.crystal);
-  active.resources.deuterium = Math.min(capFor(active, "deuterium"), active.resources.deuterium + a.reward.deuterium);
+  active.resources.metal = Math.max(active.resources.metal, Math.min(capFor(active, "metal"), active.resources.metal + a.reward.metal));
+  active.resources.crystal = Math.max(active.resources.crystal, Math.min(capFor(active, "crystal"), active.resources.crystal + a.reward.crystal));
+  active.resources.deuterium = Math.max(active.resources.deuterium, Math.min(capFor(active, "deuterium"), active.resources.deuterium + a.reward.deuterium));
   achievementsClaimed[key] = true;
   sfx.buildComplete();
   render();
@@ -5833,7 +5833,7 @@ function exchangeResources(from, to, amount, forPlanetId) {
   if (active.resources[from] < amount) return;
   const gained = marketExchangeAmount(from, to, amount, marketFeeFor(active));
   active.resources[from] -= amount;
-  active.resources[to] = Math.min(capFor(active, to), active.resources[to] + gained);
+  active.resources[to] = Math.max(active.resources[to], Math.min(capFor(active, to), active.resources[to] + gained));
   sfx.buildComplete();
   render();
 }
@@ -7136,7 +7136,7 @@ function triggerAsteroid(planet) {
   Object.keys(found).forEach(key => {
     if (!found[key]) return;
     const before = planet.resources[key];
-    planet.resources[key] = Math.min(capFor(planet, key), before + found[key]);
+    planet.resources[key] = Math.max(before, Math.min(capFor(planet, key), before + found[key]));
     gained[key] = Math.round(planet.resources[key] - before);
   });
   return gained;
@@ -7170,7 +7170,7 @@ function acceptTrade() {
   const {sell: sell, price: price} = traderOffer;
   if (active.resources[price.key] < price.amount) return;
   active.resources[price.key] -= price.amount;
-  active.resources[sell.key] = Math.min(capFor(active, sell.key), active.resources[sell.key] + sell.amount);
+  active.resources[sell.key] = Math.max(active.resources[sell.key], Math.min(capFor(active, sell.key), active.resources[sell.key] + sell.amount));
   eventLog.unshift({
     id: `ev${Date.now()}`,
     type: "trader-done",
