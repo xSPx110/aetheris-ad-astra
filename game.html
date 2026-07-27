@@ -759,7 +759,7 @@
     <canvas class="warp-canvas" id="warpGate"></canvas>
     <div class="game-logo" id="logoGate"></div>
     <div class="tap-hint" id="startGateBtn">Berühren zum Start</div>
-    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.00 Beta</div>
+    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.02</div>
   </div>
 
   <div class="title-screen hidden" id="titleScreen">
@@ -776,7 +776,7 @@
       <button class="menu-btn" id="titleMusicBtn" style="font-size:11px;width:100%">🎵 Musik</button>
       <input type="range" class="music-volume-input" id="titleMusicVolume" min="0" max="1" step="0.05" style="width:130px;margin-top:8px;accent-color:#D4AF37;display:block">
     </div>
-    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.00 Beta</div>
+    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.02</div>
   </div>
   <div class="header">
     <div class="title-row">
@@ -1222,7 +1222,8 @@ const BUILDINGS = [ {
   },
   costFactor: 2,
   icon: "🔬",
-  desc: "Ermöglicht Forschung und beschleunigt sie mit jeder weiteren Stufe deutlich."
+  energyPerLevel: 8,
+  desc: "Ermöglicht Forschung und beschleunigt sie mit jeder weiteren Stufe deutlich. Verbraucht ab Stufe 1 laufend Energie."
 }, {
   key: "roboticsFactory",
   name: "Robotikfabrik",
@@ -1233,7 +1234,8 @@ const BUILDINGS = [ {
   },
   costFactor: 2,
   icon: "🤖",
-  desc: "Automatisiert Bauarbeiten auf dem Planeten und verkürzt dadurch die Bauzeit aller Ausbauten spürbar."
+  energyPerLevel: 8,
+  desc: "Automatisiert Bauarbeiten auf dem Planeten und verkürzt dadurch die Bauzeit aller Ausbauten spürbar. Verbraucht ab Stufe 1 laufend Energie."
 }, {
   key: "naniteFactory",
   name: "Nanitenfabrik",
@@ -1253,7 +1255,8 @@ const BUILDINGS = [ {
     key: "roboticsFactory",
     level: 10
   } ],
-  desc: "Winzige Nano-Roboter, die die Fertigung auf dem Planeten weiter beschleunigen — halbiert PRO STUFE zusätzlich zur Robotikfabrik die Bauzeit von Gebäuden, Schiffen UND Verteidigung. Enorm stark, aber teuer und erst spät verfügbar (Robotikfabrik Stufe 10 + Computertechnik Stufe 10 nötig)."
+  energyPerLevel: 25,
+  desc: "Winzige Nano-Roboter, die die Fertigung auf dem Planeten weiter beschleunigen — halbiert PRO STUFE zusätzlich zur Robotikfabrik die Bauzeit von Gebäuden, Schiffen UND Verteidigung. Enorm stark, aber teuer und erst spät verfügbar (Robotikfabrik Stufe 10 + Computertechnik Stufe 10 nötig). Verbraucht spürbar Energie."
 }, {
   key: "shipyard",
   name: "Werft",
@@ -1264,7 +1267,8 @@ const BUILDINGS = [ {
   },
   costFactor: 2,
   icon: "🏗",
-  desc: "Ermöglicht den Bau von Schiffen und beschleunigt mit jeder Stufe deren Fertigungsgeschwindigkeit."
+  energyPerLevel: 6,
+  desc: "Ermöglicht den Bau von Schiffen und beschleunigt mit jeder Stufe deren Fertigungsgeschwindigkeit. Verbraucht ab Stufe 1 laufend Energie."
 }, {
   key: "planetShield",
   name: "Planetarer Schutzschirm",
@@ -4797,6 +4801,12 @@ activePlanetId = homeId;
 const mineOutput = (base, lvl) => lvl <= 0 ? 0 : base * lvl * Math.pow(1.1, lvl);
 
 const energyUse = lvl => lvl <= 0 ? 0 : Math.floor(10 * lvl * Math.pow(1.1, lvl));
+
+const facilityEnergyUse = (base, lvl) => lvl <= 0 ? 0 : Math.floor(base * lvl * Math.pow(1.05, lvl));
+
+function planetEnergyConsumption(p) {
+  return energyUse(p.levels.metalMine) + energyUse(p.levels.crystalMine) + energyUse(p.levels.deutSynth) + BUILDINGS.reduce((sum, b) => sum + (b.energyPerLevel ? facilityEnergyUse(b.energyPerLevel, p.levels[b.key] || 0) : 0), 0);
+}
 
 const solarOutput = lvl => lvl <= 0 ? 0 : Math.floor(20 * lvl * Math.pow(1.1, lvl));
 
@@ -9291,7 +9301,7 @@ function tick() {
     const fusionFuelRatio = fusionFuelNeed <= 0 ? 1 : Math.min(1, p.resources.deuterium / fusionFuelNeed);
     const fusionFuelConsumed = Math.min(p.resources.deuterium, fusionFuelNeed);
     const energyProd = (solarOutput(p.levels.solarPlant) + fusionOutput(fusionLvl) * fusionFuelRatio) * energyTechMult() * lifeformEnergyProdMult(p) * moonEnergyProdMult(p) + (p.levels.solarSatellite || 0) * SOLAR_SATELLITE_ENERGY;
-    const energyCons = energyUse(p.levels.metalMine) + energyUse(p.levels.crystalMine) + energyUse(p.levels.deutSynth);
+    const energyCons = planetEnergyConsumption(p);
     const eff = energyCons <= 0 ? 1 : Math.min(1, energyProd / energyCons);
     const metalHr = (20 + mineOutput(30, p.levels.metalMine) * eff) * p.mult.metal * miningTechMult() * officerMiningMult() * lifeformMineProdMult(p) * moonResourceProdMult(p) * blackMarketBoostMult("metal") * ringRepairProdMult(p);
     const crystalHr = (10 + mineOutput(20, p.levels.crystalMine) * eff) * p.mult.crystal * miningTechMult() * officerMiningMult() * lifeformMineProdMult(p) * moonResourceProdMult(p) * blackMarketBoostMult("crystal") * ringRepairProdMult(p);
@@ -10030,7 +10040,7 @@ function renderHeader() {
   }
   document.getElementById("gauges").innerHTML = gaugesHtml;
   const energyProd = planetEnergyProd(active);
-  const energyCons = energyUse(active.levels.metalMine) + energyUse(active.levels.crystalMine) + energyUse(active.levels.deutSynth);
+  const energyCons = planetEnergyConsumption(active);
   const energyOk = energyProd >= energyCons;
   document.getElementById("energyRow").innerHTML = `<div class="mini-gauge" title="${!energyOk ? "Energiedefizit — Produktion gedrosselt" : "Energie"}">\n      <span class="gauge-icon" style="color:${energyOk ? GOLD : RED}"><img src="${iconImgSrc("energie")}" class="icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">⚡</span></span>\n      <span class="val" style="color:${energyOk ? GOLD : RED}">${fmt(energyProd)}</span>\n      <span class="sub">/ ${fmt(energyCons)}</span>\n    </div>`;
   document.getElementById("lifeformRow").innerHTML = active.lifeform ? `<div class="mini-gauge" title="Lebensformpunkte (LFP)">\n        <span class="gauge-icon" style="color:${GOLD}"><img src="${iconImgSrc("lebensform")}" class="icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🧬</span></span>\n        <span class="val" style="color:${GOLD}">${fmt(Math.floor(active.lifeform.xp))}</span>\n      </div>\n      <div class="mini-gauge" title="Lebensform-Forschungspunkte (LFF)">\n        <span class="gauge-icon" style="color:${GOLD}"><img src="${iconImgSrc("lebensformForschung")}" class="icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🔬</span></span>\n        <span class="val" style="color:${GOLD}">${fmt(Math.floor(active.lifeform.lfp))}</span>\n      </div>\n      <div class="mini-gauge" title="Bevölkerung">\n        <span class="gauge-icon" style="color:${GOLD}"><img src="${iconImgSrc("bevoelkerung")}" class="icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">👥</span></span>\n        <span class="val" style="color:${GOLD}">${fmt(Math.floor(active.lifeform.population || 0))}</span>\n      </div>` : "";
@@ -11245,7 +11255,7 @@ function renderOverviewView() {
   html += `<div class="planet-grid">`;
   html += owned.map(p => {
     const energyProd = planetEnergyProd(p);
-    const energyCons = energyUse(p.levels.metalMine) + energyUse(p.levels.crystalMine) + energyUse(p.levels.deutSynth);
+    const energyCons = planetEnergyConsumption(p);
     const energyOk = energyProd >= energyCons;
     let statusLine;
     if (p.construction) {
@@ -11291,7 +11301,7 @@ function planetEnergyEffForDisplay(p) {
   const fusionFuelNeed = fusionDeutCost(fusionLvl) * SPEED_MULTIPLIER;
   const fusionFuelRatio = fusionFuelNeed <= 0 ? 1 : Math.min(1, p.resources.deuterium / fusionFuelNeed);
   const energyProd = (solarOutput(p.levels.solarPlant) + fusionOutput(fusionLvl) * fusionFuelRatio) * energyTechMult() * lifeformEnergyProdMult(p) * moonEnergyProdMult(p) + (p.levels.solarSatellite || 0) * SOLAR_SATELLITE_ENERGY;
-  const energyCons = energyUse(p.levels.metalMine) + energyUse(p.levels.crystalMine) + energyUse(p.levels.deutSynth);
+  const energyCons = planetEnergyConsumption(p);
   return energyCons <= 0 ? 1 : Math.min(1, energyProd / energyCons);
 }
 
@@ -11315,13 +11325,13 @@ function buildingProdLine(b, lvl, p) {
   } else if (b.type === "energy") {
     return b.key === "fusionPlant" ? `+${fmt(fusionOutput(lvl) * energyTechMult())} Energie /h · verbraucht ${fmt(fusionDeutCost(lvl))} Deuterium /h` : `+${fmt(solarOutput(lvl) * energyTechMult())} Energie /h`;
   } else if (b.type === "researchSpeed") {
-    return lvl <= 0 ? "Ermöglicht Forschung" : `Forschungsgeschwindigkeit ×${(1 + lvl * .5).toFixed(1)}`;
+    return lvl <= 0 ? "Ermöglicht Forschung" : `Forschungsgeschwindigkeit ×${(1 + lvl * .5).toFixed(1)} · verbraucht ${fmt(facilityEnergyUse(b.energyPerLevel, lvl))} Energie`;
   } else if (b.type === "buildSpeed") {
-    return lvl <= 0 ? "Normale Bauzeit" : `Bauzeit ×${robotBuildTimeMult(lvl).toFixed(2)} (schneller)`;
+    return lvl <= 0 ? "Normale Bauzeit" : `Bauzeit ×${robotBuildTimeMult(lvl).toFixed(2)} (schneller) · verbraucht ${fmt(facilityEnergyUse(b.energyPerLevel, lvl))} Energie`;
   } else if (b.type === "naniteSpeed") {
-    return lvl <= 0 ? "Kein zusätzlicher Bonus" : `Bauzeit zusätzlich ×${naniteBuildTimeMult(lvl).toFixed(3)} (Gebäude, Schiffe & Verteidigung)`;
+    return lvl <= 0 ? "Kein zusätzlicher Bonus" : `Bauzeit zusätzlich ×${naniteBuildTimeMult(lvl).toFixed(3)} (Gebäude, Schiffe & Verteidigung) · verbraucht ${fmt(facilityEnergyUse(b.energyPerLevel, lvl))} Energie`;
   } else if (b.type === "shipyard") {
-    return lvl <= 0 ? "Ermöglicht Schiffsbau" : `Baugeschwindigkeit ×${(1 + lvl * .2).toFixed(1)}`;
+    return lvl <= 0 ? "Ermöglicht Schiffsbau" : `Baugeschwindigkeit ×${(1 + lvl * .2).toFixed(1)} · verbraucht ${fmt(facilityEnergyUse(b.energyPerLevel, lvl))} Energie`;
   } else if (b.type === "shieldReduction") {
     return lvl <= 0 ? "Kein Schutz" : `Schadensreduktion −${Math.round(planetShieldReduction(lvl) * 100)}%`;
   } else if (b.type === "trade") {
@@ -13399,7 +13409,7 @@ function autopilotFindBuildCandidate(p) {
   if (!p) return null;
   if (p.construction) return null;
   const energyProd = planetEnergyProd(p);
-  const energyCons = energyUse(p.levels.metalMine) + energyUse(p.levels.crystalMine) + energyUse(p.levels.deutSynth);
+  const energyCons = planetEnergyConsumption(p);
   const needsEnergy = energyProd < energyCons;
   if (needsEnergy) {
     const plantCandidates = BUILDINGS.filter(b => b.type === "energy" && b.key !== "solarSatellite").map(b => {
@@ -13456,7 +13466,7 @@ function autopilotFindBuildCandidate(p) {
 function autopilotFindBuildGoal(p) {
   if (!p || p.construction) return null;
   const energyProd = planetEnergyProd(p);
-  const energyCons = energyUse(p.levels.metalMine) + energyUse(p.levels.crystalMine) + energyUse(p.levels.deutSynth);
+  const energyCons = planetEnergyConsumption(p);
   const needsEnergy = energyProd < energyCons;
   if (needsEnergy) {
     const plantCandidates = BUILDINGS.filter(b => b.type === "energy" && b.key !== "solarSatellite").map(b => {
