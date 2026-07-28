@@ -5,12 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AETHERIS — Echoes of an Eternal Empire</title>
 <meta name="description" content="AETHERIS: Ein browserbasiertes Weltraum-Imperium ohne Download. Kolonisiere, forsche, handle mit Dunkler Materie — und behaupte dich in einer Galaxie, die auch dir nicht allein gehört.">
-<meta property="og:type" content="website">
-<meta property="og:title" content="AETHERIS — Echoes of an Eternal Empire">
-<meta property="og:description" content="Gründe eine Kolonie, baue eine Flotte auf und handle mit Dunkler Materie — in einer Galaxie, die sich weiterdreht, auch wenn du gerade nicht online bist. Browserbasiert, ohne Download, 30 Sternensysteme.">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="AETHERIS — Echoes of an Eternal Empire">
-<meta name="twitter:description" content="Gründe eine Kolonie, baue eine Flotte auf und handle mit Dunkler Materie — in einer Galaxie, die sich weiterdreht, auch wenn du gerade nicht online bist.">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -64,8 +58,26 @@
   }
   .topnav .navcta:hover{ background:#221A10; border-color:var(--gold); }
   .topnav .navctas{ display:flex; align-items:center; gap:10px; }
-  @media (max-width:720px){ .topnav .navlinks{ display:none; } }
   @media (max-width:480px){ .topnav .navcta{ padding:8px 11px; } }
+
+  /* ---------- Mobiles Hamburger-Dropdown-Menü (reines CSS, Checkbox-Trick) ---------- */
+  .nav-toggle-checkbox{ display:none; }
+  .nav-toggle-btn{ display:none; }
+  @media (max-width:720px){
+    .nav-toggle-btn{
+      display:flex; align-items:center; justify-content:center; flex:none;
+      width:36px; height:36px; border:1px solid var(--gold-soft); border-radius:8px;
+      color:var(--gold); font-size:16px; cursor:pointer; background:#161010;
+    }
+    .topnav .navlinks{
+      position:absolute; top:100%; left:0; right:0; margin:0;
+      flex-direction:column; gap:0;
+      background:#100C0A; border-top:1px solid var(--line);
+      max-height:0; overflow:hidden; transition:max-height .25s ease;
+    }
+    .topnav .navlinks a{ padding:15px 28px; border-bottom:1px solid var(--line); font-size:13px; }
+    .nav-toggle-checkbox:checked ~ .navlinks{ max-height:340px; }
+  }
 
   /* ---------- Buttons ---------- */
   .btn{
@@ -232,21 +244,20 @@
   .roadmap-idea-list li::before{ content:"–"; position:absolute; left:0; color:var(--gold-dim); }
   .roadmap-note{ margin-top:26px; font-size:12px; color:var(--gold-dim); font-style:italic; }
 
-  /* ---------- Dyson-Sphäre: bewegtes Pseudo-3D-Modell (reines SVG/CSS, keine externe Lib nötig) ----------
-     Drei ineinander verschachtelte, gekippte Ellipsen-"Ringe" um einen glühenden Kern, jede mit eigener
-     Drehgeschwindigkeit/-richtung. Da eine Ellipse (im Gegensatz zum Kreis) beim Rotieren um den eigenen
-     Mittelpunkt ihre Achsenausrichtung sichtbar ändert, entsteht ein taumelnder, echt dreidimensional
-     wirkender Effekt — ganz ohne WebGL/Three.js. Farben = Spielpalette (Gold/Rot/Creme). */
-  .roadmap-dyson{ width:150px; max-width:58%; margin:18px auto 4px; aspect-ratio:1/1; }
-  .roadmap-dyson svg{ width:100%; height:100%; overflow:visible; }
-  .dyson-ring-a{ transform-box:fill-box; transform-origin:center; animation:dysonspin 22s linear infinite; }
-  .dyson-ring-b{ transform-box:fill-box; transform-origin:center; animation:dysonspin 34s linear infinite reverse; }
-  .dyson-ring-c{ transform-box:fill-box; transform-origin:center; animation:dysonspin 50s linear infinite; }
-  .dyson-core{ animation:dysoncore 5s ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
-  @keyframes dysonspin{ to{ transform:rotate(360deg); } }
-  @keyframes dysoncore{ 0%,100%{ opacity:0.9; } 50%{ opacity:1; } }
-  @media (prefers-reduced-motion:reduce){
-    .dyson-ring-a,.dyson-ring-b,.dyson-ring-c,.dyson-core{ animation:none !important; }
+  .roadmap-dyson-preview{
+    margin-top:14px; border:1px solid var(--line); border-radius:10px; overflow:hidden;
+    background:#0A0A0A; box-shadow: 0 0 0 1px rgba(212,175,55,0.08) inset;
+  }
+  .roadmap-dyson-preview iframe{
+    display:block; width:100%; height:260px; border:0;
+  }
+  .roadmap-dyson-link{
+    display:inline-block; margin-top:9px; font-size:12px; color:var(--gold);
+    text-decoration:none; border-bottom:1px dashed var(--gold-soft);
+  }
+  .roadmap-dyson-link:hover{ color:var(--cream); }
+  @media (max-width: 640px){
+    .roadmap-dyson-preview iframe{ height:200px; }
   }
 
   /* ---------- Chronicle pull-quote ---------- */
@@ -290,16 +301,18 @@
 
 <div class="topnav">
   <div class="logo" id="navLogo">AETHERIS<span>.</span></div>
+  <input type="checkbox" id="navToggle" class="nav-toggle-checkbox">
   <div class="navlinks">
     <a href="#imperium">Imperium</a>
     <a href="#galaxie">Galaxie</a>
     <a href="#autopilot">Autopilot</a>
-    <a href="#roadmap">Roadmap</a>
     <a href="#chronik">Chronik</a>
+    <a href="#roadmap">Roadmap</a>
   </div>
   <div class="navctas">
     <a href="https://drive.google.com/drive/folders/1XKGAJgDgHwoFL4oJBWz7-rC1aNmPryND?usp=sharing" class="navcta" target="_blank" rel="noopener">⇩ Android</a>
     <a href="game.html" class="navcta">Spielen</a>
+    <label for="navToggle" class="nav-toggle-btn" aria-label="Menü öffnen/schließen">☰</label>
   </div>
 </div>
 
@@ -319,7 +332,7 @@
       <a href="https://drive.google.com/drive/folders/1XKGAJgDgHwoFL4oJBWz7-rC1aNmPryND?usp=sharing" class="btn" target="_blank" rel="noopener">⇩ Android APK</a>
     </div>
     <div class="meta">
-      <span>v0.53.00 <b>Beta</b></span>
+      <span>v0.52.00 <b>Open Beta</b></span>
       <span>30 Sternensysteme</span>
       <span>Auch als Android-APK</span>
     </div>
@@ -457,18 +470,30 @@
       <div class="sp">
         <img class="sp-bg" src="bilder/lebensformen/rocktal/rocktal_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
         <div class="glyph" style="display:none">🪨</div>
-        <div class="sp-body"><div class="name">Rock'tal</div><div class="desc">Rohstoffe &amp; Verteidigung</div></div>
+        <div class="sp-body"><div class="name">Silicae</div><div class="desc">Rohstoffe &amp; Verteidigung</div></div>
       </div>
       <div class="sp">
         <img class="sp-bg" src="bilder/lebensformen/mecha/mecha_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
         <div class="glyph" style="display:none">🤖</div>
-        <div class="sp-body"><div class="name">Mechas</div><div class="desc">Werften &amp; Energie</div></div>
+        <div class="sp-body"><div class="name">Synthiden</div><div class="desc">Werften &amp; Energie</div></div>
       </div>
       <div class="sp">
         <img class="sp-bg" src="bilder/lebensformen/kaelesh/kaelesh_1.png" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
         <div class="glyph" style="display:none">👁</div>
-        <div class="sp-body"><div class="name">Kaelesh</div><div class="desc">Artefakte &amp; Vorahnung</div></div>
+        <div class="sp-body"><div class="name">Solenari</div><div class="desc">Artefakte &amp; Vorahnung</div></div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="section reveal" id="chronik">
+  <div class="wrap">
+    <div class="chronicle">
+      <div class="eyebrow">AUS DER CHRONIK</div>
+      <blockquote>„Wir nannten uns das Ewige Reich, weil wir glaubten, gebaut zu haben, was nie
+        enden würde. Wir hatten unrecht — aber vielleicht auf die einzige Art, die zählt:
+        Nichts, das gebaut wird, ist ewig. Nur das, was weitergegeben wird.“</blockquote>
+      <div class="attrib">— Omega-Artefakt, Kapitel 5</div>
     </div>
   </div>
 </section>
@@ -485,37 +510,13 @@
         <div class="roadmap-status"><span class="dot" style="background:#D4AF37"></span> In Arbeit</div>
         <div class="roadmap-item">
           <div class="rname">Dyson-Sphäre</div>
-          <div class="roadmap-dyson" aria-hidden="true">
-            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <radialGradient id="dysonGlow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="#D4AF37" stop-opacity="0.5"/>
-                  <stop offset="100%" stop-color="#D4AF37" stop-opacity="0"/>
-                </radialGradient>
-                <radialGradient id="dysonCoreGrad" cx="38%" cy="34%" r="68%">
-                  <stop offset="0%" stop-color="#FFF6DD"/>
-                  <stop offset="40%" stop-color="#D4AF37"/>
-                  <stop offset="100%" stop-color="#7A5A18"/>
-                </radialGradient>
-              </defs>
-              <circle cx="100" cy="100" r="58" fill="url(#dysonGlow)"/>
-              <circle class="dyson-core" cx="100" cy="100" r="19" fill="url(#dysonCoreGrad)"/>
-              <g class="dyson-ring-a" transform="rotate(-14 100 100)">
-                <ellipse cx="100" cy="100" rx="88" ry="27" fill="none" stroke="#D4AF37" stroke-width="2.4" stroke-dasharray="9 7" opacity="0.9"/>
-                <circle cx="188" cy="100" r="3" fill="#EDE4D3"/>
-                <circle cx="12" cy="100" r="3" fill="#EDE4D3"/>
-              </g>
-              <g class="dyson-ring-b" transform="rotate(10 100 100)">
-                <ellipse cx="100" cy="100" rx="67" ry="19" fill="none" stroke="#C4402E" stroke-width="1.7" stroke-dasharray="4 8" opacity="0.65"/>
-              </g>
-              <g class="dyson-ring-c" transform="rotate(-5 100 100)">
-                <ellipse cx="100" cy="100" rx="103" ry="13" fill="none" stroke="#8A7A6A" stroke-width="1.2" stroke-dasharray="2 6" opacity="0.5"/>
-              </g>
-            </svg>
-          </div>
           <div class="rdesc">Neues Endgame-Ziel. Bauteile werden auf unterschiedlichen Planetentypen
             produziert, auf einem künstlichen Mond montiert und zur Sonne verschickt. Mit eigener
             3D-Ansicht, in der man den Baufortschritt live sehen kann.</div>
+          <div class="roadmap-dyson-preview">
+            <iframe src="dyson-vorschau.html?mini=1" title="Dyson-Sphäre 3D-Vorschau" loading="lazy"></iframe>
+          </div>
+          <a href="dyson-vorschau.html" target="_blank" rel="noopener" class="mono roadmap-dyson-link">→ Vorschau in groß öffnen</a>
         </div>
       </div>
       <div class="roadmap-col">
@@ -551,17 +552,6 @@
   </div>
 </section>
 
-<section class="section reveal" id="chronik">
-  <div class="wrap">
-    <div class="chronicle">
-      <div class="eyebrow">AUS DER CHRONIK</div>
-      <blockquote>„Wir nannten uns das Ewige Reich, weil wir glaubten, gebaut zu haben, was nie
-        enden würde. Wir hatten unrecht — aber vielleicht auf die einzige Art, die zählt:
-        Nichts, das gebaut wird, ist ewig. Nur das, was weitergegeben wird.“</blockquote>
-      <div class="attrib">— Omega-Artefakt, Kapitel 5</div>
-    </div>
-  </div>
-</section>
 
 <section class="finalcta reveal" id="start">
   <div class="wrap">
@@ -572,15 +562,22 @@
       <a href="game.html" class="btn primary">Jetzt spielen</a>
       <a href="https://drive.google.com/drive/folders/1XKGAJgDgHwoFL4oJBWz7-rC1aNmPryND?usp=sharing" class="btn" target="_blank" rel="noopener">⇩ Android APK herunterladen</a>
     </div>
-    <p style="font-size:13px;color:var(--gold-dim);margin-top:10px">Öffnet den Google-Drive-Ordner mit der jeweils aktuellsten APK-Version.</p>
   </div>
 </section>
 
 <footer>
-  <div class="wrap">AETHERIS — Echoes of an Eternal Empire · <span class="fver">v0.53.00 Beta</span> · Ein Indie-Solo-Projekt</div>
+  <div class="wrap">AETHERIS — Echoes of an Eternal Empire · <span class="fver">v0.52.00 Open Beta</span> · Ein Indie-Solo-Projekt</div>
 </footer>
 
 <script>
+/* ---------- Mobiles Nav-Menü: nach Linkklick automatisch schließen ---------- */
+(function(){
+  const toggle = document.getElementById('navToggle');
+  document.querySelectorAll('.navlinks a').forEach(a => {
+    a.addEventListener('click', () => { toggle.checked = false; });
+  });
+})();
+
 /* ---------- Starfield ---------- */
 (function(){
   const canvas = document.getElementById('stars');
