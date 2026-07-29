@@ -786,7 +786,7 @@
     <canvas class="warp-canvas" id="warpGate"></canvas>
     <div class="game-logo" id="logoGate"></div>
     <div class="tap-hint" id="startGateBtn">Berühren zum Start</div>
-    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.24</div>
+    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.25</div>
   </div>
 
   <div class="title-screen hidden" id="titleScreen">
@@ -803,7 +803,7 @@
       <button class="menu-btn" id="titleMusicBtn" style="font-size:11px;width:100%">🎵 Musik</button>
       <input type="range" class="music-volume-input" id="titleMusicVolume" min="0" max="1" step="0.05" style="width:130px;margin-top:8px;accent-color:#D4AF37;display:block">
     </div>
-    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.24</div>
+    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.25</div>
   </div>
   <div class="header">
     <div class="title-row">
@@ -2956,8 +2956,7 @@ const robotBuildTimeMult = (lvl) => 1 / (1 + (lvl||0)*0.5);
 // Nanitenfabrik (siehe BUILDINGS "naniteFactory"): halbiert die Bauzeit von Gebäuden, Schiffen UND
 // Verteidigung PRO STUFE (0.5^Stufe) — wirkt zusätzlich zur Robotikfabrik, genau wie im Vorbild OGame.
 const naniteBuildTimeMult = (lvl) => Math.pow(0.5, lvl||0);
-const devTimeDiv = () => 1;
-const buildSeconds = (c, robLevel, naniteLevel) => Math.max(3, Math.round((c.metal+c.crystal)/40 * timeTechMult() * officerBuildTimeMult() * robotBuildTimeMult(robLevel) * naniteBuildTimeMult(naniteLevel) / devTimeDiv()));
+const buildSeconds = (c, robLevel, naniteLevel) => Math.max(3, Math.round((c.metal+c.crystal)/40 * timeTechMult() * officerBuildTimeMult() * robotBuildTimeMult(robLevel) * naniteBuildTimeMult(naniteLevel)));
 const fmt = (n) => Math.floor(n).toLocaleString('de-DE');
 // Kompakte Kurzform für den Header (999,99k → nächster Tick 1,00 Mio), damit lange Zahlen das Layout nicht sprengen.
 const fmtShort = (n) => {
@@ -3297,9 +3296,9 @@ const researchCost = (r, lvl) => ({
   crystal: Math.floor(r.baseCost.crystal*Math.pow(r.costFactor, lvl)),
   deuterium: Math.floor(r.baseCost.deuterium*Math.pow(r.costFactor, lvl)),
 });
-const researchSeconds = (c, labLevel) => Math.max(5, Math.round((c.metal+c.crystal+c.deuterium*1.5)/(50*(1+labLevel*0.5)) * timeTechMult() * officerResearchTimeMult() / devTimeDiv()));
+const researchSeconds = (c, labLevel) => Math.max(5, Math.round((c.metal+c.crystal+c.deuterium*1.5)/(50*(1+labLevel*0.5)) * timeTechMult() * officerResearchTimeMult()));
 
-const shipBuildSeconds = (ship, count, yardLevel, hostPlanet) => Math.max(3, Math.round(ship.seconds*count / (1+yardLevel*0.2) * timeTechMult() * officerBuildTimeMult() * lifeformShipBuildTimeMult(hostPlanet) * naniteBuildTimeMult(hostPlanet && hostPlanet.levels ? hostPlanet.levels.naniteFactory : 0) / devTimeDiv()));
+const shipBuildSeconds = (ship, count, yardLevel, hostPlanet) => Math.max(3, Math.round(ship.seconds*count / (1+yardLevel*0.2) * timeTechMult() * officerBuildTimeMult() * lifeformShipBuildTimeMult(hostPlanet) * naniteBuildTimeMult(hostPlanet && hostPlanet.levels ? hostPlanet.levels.naniteFactory : 0)));
 
 /* Werft-Kapazität: wie viele Bau-Aufträge gleichzeitig laufen können.
    Stufe 0–7: 1 · Stufe 8–15: 2 · Stufe 16–23: 3 · ab Stufe 24: 4 (Deckel) */
@@ -5194,7 +5193,6 @@ function loadGame() {
   } catch(e) { /* beschädigter Spielstand — mit Neustart weitermachen */ spawnPirates(); }
 }
 
-
 function resetGame() {
   showConfirmDialog({
     icon: "🗑",
@@ -5566,7 +5564,7 @@ function canBuildDysonPart(part, planet) {
 
 // Gleiche Formel wie shipBuildSeconds, nur mit part.buildTime statt ship.seconds als Basis und einem
 // höheren Mindestwert (60s statt 3s) — die Bauteile sind bewusst schwergewichtige Endgame-Objekte.
-const dysonPartBuildSeconds = (part, count, yardLevel, hostPlanet) => Math.max(60, Math.round(part.buildTime*count / (1+yardLevel*0.2) * timeTechMult() * officerBuildTimeMult() * lifeformShipBuildTimeMult(hostPlanet) * naniteBuildTimeMult(hostPlanet && hostPlanet.levels ? hostPlanet.levels.naniteFactory : 0) / devTimeDiv()));
+const dysonPartBuildSeconds = (part, count, yardLevel, hostPlanet) => Math.max(60, Math.round(part.buildTime*count / (1+yardLevel*0.2) * timeTechMult() * officerBuildTimeMult() * lifeformShipBuildTimeMult(hostPlanet) * naniteBuildTimeMult(hostPlanet && hostPlanet.levels ? hostPlanet.levels.naniteFactory : 0)));
 
 // Reiht ein Dyson-Bauteil in die normale Werft-Queue des Planeten ein (gleicher Mechanismus wie
 // startShipBuild) — immer genau 1 Stück pro Bestellung, da die Bauteile ohnehin Endgame-Stückkosten
@@ -5786,7 +5784,7 @@ const DYSON_PANEL_BASE_ASSEMBLY_SECONDS = 3600; // [Phase 16 Balancing] 9h→1h/
 // beabsichtigten "Wochen-/Monate"-Projekts (siehe Kommentar oben bei DYSON_SPHERE_TOTAL_PANELS). 1h/Panel
 // ergibt eine Mindest-Bauzeit von ~42 Tagen (6 Wochen), Rohstoffbedarf bleibt der eigentliche Flaschenhals.
 function dysonPanelAssemblySeconds(count, yardLevel, hostPlanet) {
-  return Math.max(60, Math.round(DYSON_PANEL_BASE_ASSEMBLY_SECONDS*count / (1+(yardLevel||0)*0.2) * timeTechMult() * officerBuildTimeMult() * lifeformShipBuildTimeMult(hostPlanet) * naniteBuildTimeMult(hostPlanet && hostPlanet.levels ? hostPlanet.levels.naniteFactory : 0) / devTimeDiv()));
+  return Math.max(60, Math.round(DYSON_PANEL_BASE_ASSEMBLY_SECONDS*count / (1+(yardLevel||0)*0.2) * timeTechMult() * officerBuildTimeMult() * lifeformShipBuildTimeMult(hostPlanet) * naniteBuildTimeMult(hostPlanet && hostPlanet.levels ? hostPlanet.levels.naniteFactory : 0)));
 }
 // Wie viele vollständige 5er-Sets (je 1 Bauteil pro Typ) aktuell auf dem Mond zur Montage bereitstehen
 function maxAssemblableDysonSets(moon) {
@@ -5881,7 +5879,7 @@ function canAssembleSonnenwerftPanel() {
   return (research.sphereTech || 0) >= 1;
 }
 function sonnenwerftPanelAssemblySeconds(count) {
-  return Math.max(60, Math.round(DYSON_PANEL_BASE_ASSEMBLY_SECONDS * count * timeTechMult() / devTimeDiv()));
+  return Math.max(60, Math.round(DYSON_PANEL_BASE_ASSEMBLY_SECONDS * count * timeTechMult()));
 }
 function startSonnenwerftPanelAssembly(count) {
   if (dysonInstallations.panelQueue) return false;
@@ -5969,9 +5967,9 @@ function launchDysonPartsShipment(planet, fleetCounts, dysonCargo) {
 const DYSON_COLLECTOR_MAX_LEVEL = 10;
 const DYSON_CONVERTER_MAX_LEVEL = 10;
 function dysonCollectorUpgradeCost(toLevel) { return Math.round(7000 * Math.pow(1.55, toLevel-1)); }
-function dysonCollectorUpgradeSeconds(toLevel) { return Math.round(25200 * Math.pow(1.22, toLevel-1) / devTimeDiv()); }
+function dysonCollectorUpgradeSeconds(toLevel) { return Math.round(25200 * Math.pow(1.22, toLevel-1)); }
 function dysonConverterUpgradeCost(toLevel) { return Math.round(8000 * Math.pow(1.55, toLevel-1)); }
-function dysonConverterUpgradeSeconds(toLevel) { return Math.round(25200 * Math.pow(1.22, toLevel-1) / devTimeDiv()); }
+function dysonConverterUpgradeSeconds(toLevel) { return Math.round(25200 * Math.pow(1.22, toLevel-1)); }
 // Umtauschkurs Wandler-Kern: 1 Sternenenergie ergibt JEWEILS (5+Stufe)/3 Metall UND Kristall UND
 // Deuterium (gleichmäßig verteilter Gesamtwert von 5+Stufe pro eingesetzter Einheit Sternenenergie).
 function dysonConverterRatePerUnit(level) { return (5 + Math.max(1, level)) / 3; }
@@ -6066,7 +6064,7 @@ function startForgeBuild() {
   if (starEnergy < DYSON_FORGE_BUILD_COST) return false;
   starEnergy -= DYSON_FORGE_BUILD_COST;
   const t = Date.now();
-  dysonInstallations.forgeQueue = { startTime:t, endTime:t + DYSON_FORGE_BUILD_SECONDS*1000 / devTimeDiv(), cost:DYSON_FORGE_BUILD_COST };
+  dysonInstallations.forgeQueue = { startTime:t, endTime:t + DYSON_FORGE_BUILD_SECONDS*1000, cost:DYSON_FORGE_BUILD_COST };
   return true;
 }
 function cancelForgeBuild() {
@@ -6083,7 +6081,7 @@ function startForgeShipUnlock() {
   if (starEnergy < DYSON_FORGE_SHIP_UNLOCK_COST) return false;
   starEnergy -= DYSON_FORGE_SHIP_UNLOCK_COST;
   const t = Date.now();
-  dysonInstallations.forgeShipQueue = { startTime:t, endTime:t + DYSON_FORGE_SHIP_UNLOCK_SECONDS*1000 / devTimeDiv(), cost:DYSON_FORGE_SHIP_UNLOCK_COST };
+  dysonInstallations.forgeShipQueue = { startTime:t, endTime:t + DYSON_FORGE_SHIP_UNLOCK_SECONDS*1000, cost:DYSON_FORGE_SHIP_UNLOCK_COST };
   return true;
 }
 function cancelForgeShipUnlock() {
@@ -6100,7 +6098,7 @@ function startForgeDefenseUnlock() {
   if (starEnergy < DYSON_FORGE_DEFENSE_UNLOCK_COST) return false;
   starEnergy -= DYSON_FORGE_DEFENSE_UNLOCK_COST;
   const t = Date.now();
-  dysonInstallations.forgeDefenseQueue = { startTime:t, endTime:t + DYSON_FORGE_DEFENSE_UNLOCK_SECONDS*1000 / devTimeDiv(), cost:DYSON_FORGE_DEFENSE_UNLOCK_COST };
+  dysonInstallations.forgeDefenseQueue = { startTime:t, endTime:t + DYSON_FORGE_DEFENSE_UNLOCK_SECONDS*1000, cost:DYSON_FORGE_DEFENSE_UNLOCK_COST };
   return true;
 }
 function cancelForgeDefenseUnlock() {
