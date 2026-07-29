@@ -1,11 +1,1681 @@
 <!DOCTYPE html>
+<!--
+============================================================
+ CHANGELOG — neue Einträge kommen immer ganz nach OBEN, unter diese Zeile.
+
+v0.53.24
+- Neu: Mehrere Profile auf einmal löschen (im "Profil verwalten"-Fenster, neuer Knopf "Mehrere Profile
+  auswählen & löschen…"). Öffnet ein eigenes Modal (`bulkDeleteProfilesModalOverlay`) mit einer Checkbox-
+  Liste aller Profile außer dem geschützten Hauptprofil (AETHERIS) — bewusst als AUSWAHL statt eines
+  einzelnen "alles weg"-Knopfs, damit gezielt bestimmt werden kann, welche Profile bleiben. "Alle auswählen"-
+  Checkbox oben, Bestätigen-Knopf zeigt die aktuelle Anzahl ausgewählter Profile und ist deaktiviert, solange
+  nichts markiert ist. Bestätigung läuft über den bestehenden `showConfirmDialog()` mit Namensliste aller
+  betroffenen Profile. Löschung pro Profil exakt dieselbe Logik wie beim bisherigen Einzel-Löschen-Knopf
+  (`deleteProfileBtn`): Profil-Eintrag, zugehöriger Spielstand (`localStorage`) und Heimatwelt-Registry-
+  Eintrag werden entfernt. War das aktive Profil mit dabei, wechselt das Spiel danach automatisch aufs
+  Hauptprofil und lädt neu.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.23" auf "v0.53.24" erhöht.
+
+v0.53.23
+- Backup-Dateiname nochmal angepasst nach Feedback: Format jetzt `AETHERIS-<profil>-backup-<datum>-<zeit>.json`
+  (z.B. `AETHERIS-dev-uni-backup-2026-07-28-21-54.json`) — "AETHERIS-" wieder als Prefix (groß), "savegame"
+  aus dem Namen raus (redundant zu "backup"), Zeitstempel jetzt nur bis zur Minute statt bis zur Sekunde
+  (`stamp` von `slice(0,19)` auf `slice(0,16)` gekürzt).
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.22" auf "v0.53.23" erhöht.
+
+v0.53.22
+- Backup-Dateiname weiter verschlankt: "aetheris-"-Prefix entfernt, da der Spielname sonst doppelt drin
+  steckt (Datei heißt eh schon `aetheris-*.html`/liegt im Aetheris-Ordner). Neu z.B.
+  `elly-savegame-backup-2026-07-28-21-50.json` statt `aetheris-elly-savegame-backup-2026-07-28-21-50.json`.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.21" auf "v0.53.22" erhöht.
+
+v0.53.21
+- Spielstand-Export/-Import umbenannt und Backup-Dateiname personalisiert: Buttons im Einstellungsmenü
+  heißen jetzt "Spielstand-Backup" / "Spielstand-Import" statt schlicht "Export"/"Import" (passender für
+  ein Spiel). Neue Funktion `profileNameForFilename()` liest den Namen des aktiven Profils (z.B. "Elly")
+  und baut daraus einen dateinamensicheren Slug; `exportSave()` nutzt ihn jetzt für den Dateinamen —
+  z.B. `aetheris-elly-savegame-backup-2026-07-28-21-50.json` statt bisher generisch
+  `aetheris-save-2026-07-28-21-50.json`. Betrifft nur den Einzelprofil-Export (`exportSave()`); der
+  Sammel-Export "Alle Profile sichern/übertragen" (`exportAllProfiles()`) war schon eigenständig benannt
+  und blieb unverändert. Reine Namensänderung, keine Auswirkung auf die gespeicherten Daten selbst (siehe
+  v0.53.20-Antwort: `dysonState`/`starEnergy`/`dysonInstallations` waren schon vollständig im Export
+  enthalten).
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.20" auf "v0.53.21" erhöht.
+
+v0.53.20
+- 🔆 Dyson-Sphäre — Bugfix + Balancing (Bauzeiten): alle Dyson-Sphäre-Bauzeiten liefen bisher NICHT durch
+  `devTimeDiv()` (der ÷30-Beschleuniger, den jedes andere Bau-/Forschungs-/Schiffs-Zeitlimit im Dev-Uni-
+  Profil bekommt) — dadurch dauerte z.B. eine Panel-Montage in der Dev-Uni genauso lange wie im Live-
+  Universum. Betroffen und gefixt: `sonnenwerftPanelAssemblySeconds()`, `dysonPanelAssemblySeconds()`
+  (alte Mond-Formel, bleibt als Funktion bestehen), `dysonPartBuildSeconds()`, `dysonCollectorUpgradeSeconds()`,
+  `dysonConverterUpgradeSeconds()` sowie die drei Sonnenschmiede-Zeitkonstanten (`DYSON_FORGE_BUILD_SECONDS`,
+  `DYSON_FORGE_SHIP_UNLOCK_SECONDS`, `DYSON_FORGE_DEFENSE_UNLOCK_SECONDS`) — alle jetzt zusätzlich durch
+  `devTimeDiv()` geteilt. Live-Universen sind unverändert (`devTimeDiv()` liefert dort weiterhin `1`).
+  In `dysonsphere.html` bekamen die reinen Anzeige-Vorschauwerte (Kosten-/Zeit-Vorschau vor dem Klick,
+  duplizierte Kopien der Formeln) ein eigenes, lokales `devTimeDiv()`-Äquivalent (`isDevProfileActive()`
+  liest `aetheris_profiles_v1` aus `localStorage`), damit die Vorschau im Dev-Uni-Profil nicht mehr falsch
+  (zu lang) anzeigt — rein kosmetisch, die tatsächliche Buchung läuft weiterhin ausschließlich serverseitig
+  über die Haupt-Datei.
+  Zusätzlich Balancing: `DYSON_PANEL_BASE_ASSEMBLY_SECONDS` von 9h auf 1h pro Panel gesenkt. Grund: die
+  Panel-Montage läuft seriell in einem einzigen Slot ohne Werftstufen-Bonus, die Zeit skaliert linear mit
+  der Stückzahl — bei 1.000 benötigten Panelen und 9h/Panel ergab das eine reine Mindest-Bauzeit von 375
+  Tagen (über ein Jahr), selbst bei unbegrenzten Rohstoffen im Lager. Das widersprach dem eigentlichen
+  Design-Ziel (Rohstoffbedarf soll der Flaschenhals sein, nicht die reine Bauzeit, siehe Kommentar bei
+  `DYSON_SPHERE_TOTAL_PANELS`) und der beabsichtigten "Wochen-/Monate"-Projektlänge. 1h/Panel ergibt eine
+  Mindest-Bauzeit von ~42 Tagen (6 Wochen) für die volle Sphäre, passend zur Zielspanne.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.19" auf "v0.53.20" erhöht.
+
+v0.53.19
+- 🔆 Dyson-Sphäre, Phase 15 (Sonnenschmiede + finaler Balancing-Durchgang): letzte Ausbaustufe der
+  Sonnenwerft-Bauliste. Neuer, dritter Bereich neben Kollektor-Array/Wandler-Kern: erst wird die
+  Sonnenschmiede selbst gebaut (einmalig, `dysonInstallations.forgeQueue` → `forgeUnlocked`, Kosten aus
+  `starEnergy` wie die anderen Ausbauten, Bauzeit 3 Tage, zusätzlich erst ab 50% Sphären-Fertigstellung
+  verfügbar — `DYSON_FORGE_MIN_COMPLETION`, geprüft gegen `dysonState.panelsBuilt`/`DYSON_SPHERE_TOTAL_PANELS`).
+  Danach zwei unabhängig voneinander freischaltbare Optionen, je eigene Warteschlange
+  (`forgeShipQueue`/`forgeDefenseQueue` → `forgeShipUnlocked`/`forgeDefenseUnlocked`): "🚀 Sonnendreadnought"
+  (exklusives Endgame-Schiff, übertrifft sogar den Weltenbrecher an Feuerkraft, aber `maxOwned:2` statt nur
+  1) und "🌞 Sonnenbastion" (exklusive Endgame-Verteidigung, stärkste stationäre Waffe im Arsenal). Beide
+  sind danach ganz normal über die reguläre Werft-Bauliste des Planeten baubar (normale Rohstoffe, kein
+  Sonderweg) — neues Feld `requiresForgeUnlock:"ship"|"defense"` bei `SHIPS`/`DEFENSES`, geprüft in
+  `meetsRequirement()`/`reqLabel()`. Neue `case`-Zweige in `handleDysonWerftMessage()`: `"buildForge"`,
+  `"cancelForgeBuild"`, `"unlockForgeShip"`, `"cancelForgeShipUnlock"`, `"unlockForgeDefense"`,
+  `"cancelForgeDefenseUnlock"` — exaktes Prüfen/Ausführen/`saveGame()`/Antworten-Muster wie Kollektor-
+  Array/Wandler-Kern. `tick()` schließt alle drei Warteschlangen per Zeitstempel-Vergleich ab, genau wie
+  `researchQueue`. `renderDysonView()`-Statuskarte "Sonnenwerft-Ausbau" um die Sonnenschmiede erweitert.
+  Zusätzlich der in Phase 14 angekündigte finale Balancing-Durchgang für Kollektor-Array/Wandler-Kern:
+  Kostenwachstum pro Stufe von ×1.5 auf ×1.55, Bauzeitwachstum von ×1.2 auf ×1.22, Basiskosten leicht
+  erhöht (Kollektor 5.000→7.000, Wandler 6.000→8.000 Sternenenergie), Basis-Bauzeit von 6h auf 7h — macht
+  hohe Stufen spürbar teurer/langsamer statt linear durchrushbar, ohne die frühen Stufen unattraktiv zu
+  machen. Maximalstufe bleibt bei 10 für beide. Das war laut Übergabe-Notiz nur ein erster Vorschlag zur
+  Abstimmung, keine endgültig in Stein gemeißelte Zahl.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.18" auf "v0.53.19" erhöht.
+
+v0.53.18
+- 🔆 Dyson-Sphäre, Phase 14 (Sonnenwerft — Kollektor-Array + Wandler-Kern): die beiden nächsten
+  Sonnenwerft-Ausbauten aus dem Phasenplan sind jetzt spielbar. Neue Datenfelder
+  `dysonInstallations.collectorQueue`/`converterQueue` (laufender Ausbau, Struktur analog
+  `researchQueue`: `{toLevel, startTime, endTime, cost}`) ergänzen die bereits seit Phase 11 vorhandenen,
+  bis jetzt ungenutzten Felder `collectorLevel`/`converterLevel`. Beide Ausbauten werden bewusst NICHT
+  aus Planeten-Rohstoffen bezahlt, sondern aus der bei der Sonne gesammelten Sternenenergie (`starEnergy`)
+  selbst — passt thematisch und braucht keinen "aktiven Planeten"-Kontext, der beim Auslösen über
+  `dysonsphere.html`/`postMessage` ohnehin nicht sinnvoll feststeht. Kollektor-Array erhöht den
+  Sternenenergie-Ertrag um 12%/Stufe (`dysonCollectorBonusMult()`, wirkt in `starEnergyRatePerHour()` —
+  identische Formel jetzt auch in `dysonsphere.html` für die Kopf-Anzeige dupliziert,
+  `knownCollectorLevel` hält sie per Poll aktuell). Wandler-Kern schaltet ab Stufe 1 einen Umtausch
+  Sternenenergie → Metall/Kristall/Deuterium frei (Kurs verbessert sich mit der Stufe,
+  `dysonConverterRatePerUnit()`), Zielplanet frei wählbar aus einer Kurzliste aller eigenen Planeten.
+  Neue echte `case`-Zweige in `handleDysonWerftMessage()`: `"upgradeCollector"`,
+  `"cancelCollectorUpgrade"`, `"upgradeConverter"`, `"cancelConverterUpgrade"`, `"convertStarEnergy"` —
+  jeweils prüfen, ausführen, `saveGame()`, antworten (exaktes Muster wie die Panel-Montage seit Phase 13).
+  `tick()` schreibt fertige Ausbauten wie bei der Forschung per Zeitstempel-Vergleich gut. Bedienoberfläche
+  in `dysonsphere.html`: die Sonnenwerft-Bauliste bekommt zwei neue Abschnitte "☀️ Kollektor-Array" und
+  "🔄 Wandler-Kern" (Stufe, Bonus/Kurs, laufender Ausbau mit Fortschrittsbalken + Abbrechen-Button, sonst
+  Ausbau-Knopf mit Kosten-/Zeit-Vorschau; beim Wandler-Kern zusätzlich die Umtausch-Sektion sobald Stufe
+  ≥1). Read-only-Statuskarte "Sonnenwerft-Ausbau" zur Info auch in der Haupt-Datei-Übersicht
+  (`renderDysonView`) ergänzt — bedient wird weiterhin ausschließlich über die 3D-Ansicht. Platzhalter-
+  Balancing (Kosten/Zeiten/Maximalstufe 10/Umtauschkurs) — finaler Balancing-Durchgang laut Phasenplan
+  erst in Phase 15 zusammen mit der Sonnenschmiede.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.17" auf "v0.53.18" erhöht.
+
+v0.53.17
+- 🔆 Dyson-Sphäre, Phase 13 (Sonnenwerft — echte Panel-Montage + Direktversand, ersetzt den Mond-Weg):
+  Bauteile fliegen jetzt DIREKT von ihrem Bauteil-Planeten zur Sonnenwerft bei der Sonne statt zu einem
+  künstlichen Mond — neue eigenständige Flottenmission `launchDysonPartsShipment`/Missionstyp
+  `"dysonPartsShipment"` (analog zum bisherigen Panel-Versand `launchDysonShipment`/`"dysonLaunch"`, aber
+  mit Bauteil- statt Panel-Fracht und Ziel Sonnenwerft statt Mond), neues Widget "🔆 Bauteile zur
+  Sonnenwerft schicken" auf der Planeten-Werft-Seite. Panel-Montage (5 Bauteile → 1 Panel) läuft jetzt in
+  `dysonInstallations` selbst statt auf einem Mond (`startSonnenwerftPanelAssembly`/
+  `cancelSonnenwerftPanelAssembly`), bedient über die neue Bauliste in `dysonsphere.html` — die schickt
+  dafür `"assemblePanel"`/`"cancelAssembly"`-Anfragen per `postMessage` an die neuen echten `case`-Zweige
+  in `handleDysonWerftMessage()` (Grundgerüst dafür stand schon seit Phase 12), die prüfen, ausführen und
+  speichern. Weil die Sonnenwerft ohnehin schon bei der Sonne steht, braucht ein fertiges Panel KEINEN
+  separaten Versand-Schritt mehr — es wächst bei Fertigstellung direkt `dysonState.panelsBuilt`
+  (`tick()`). Vollautomatik (`runDysonAutomation`, ab Sphärentechnik Stufe 2) liefert Bauteile jetzt
+  ebenfalls direkt an die Sonnenwerft statt an einen gewählten "Hauptmond" — der ganze Hauptmond-
+  Auswahlmechanismus (★-Knopf, "Künstliche Monde"-Liste in der Dyson-Übersicht) entfällt damit
+  ersatzlos, die eigentliche Panel-Montage bleibt aber bewusst manuell (Spielerentscheid, nicht Teil der
+  Automatik). Bereits vorhandene Mond-Altbestände (`moon.dysonParts`, `moon.dysonPanels`, laufende
+  `moon.panelQueue`) werden beim ersten Laden nach dem Update einmalig automatisch in die Sonnenwerft
+  übernommen (`migrateMoonDysonToSonnenwerft`, Flag `dysonInstallations.migratedFromMoon`) — keine
+  Bauteile/Panele gehen dabei verloren. Die alte Mond-Montage-UI (Bauteil-Inventar, "Panel montieren",
+  "Versand zur Sonne" auf der Mond-Werft-Seite) sowie der alte Transport-Weg planet→mond für Bauteile
+  im allgemeinen Transport-Dialog sind entfernt und durch Hinweistexte auf den neuen Weg ersetzt; die
+  zugrundeliegenden alten Funktionen (`startPanelAssembly`, `launchDysonShipment` fürs Mond→Sonne-
+  Versenden fertiger Panele o.ä.) bleiben unverändert im Code, werden aber von keiner Stelle mehr
+  aufgerufen. Neuer Event-Log-Eintragstyp `"dyson-parts-shipment"` sowie Anzeige der neuen Missionsart in
+  der Flotten-unterwegs-Liste ergänzt.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.16" auf "v0.53.17" erhöht.
+
+v0.53.16
+- 🔆 Dyson-Sphäre, Phase 12 (Sonnenwerft — postMessage-Grundgerüst): Kommunikationskanal zwischen der
+  Haupt-Datei und `dysonsphere.html` aufgebaut, noch ohne UI (kommt in Phase 13). `dysonsphere.html`
+  bleibt weiterhin komplett lesend gegenüber localStorage — neu ist ausschließlich, dass sie ab jetzt
+  per `postMessage` (same-origin, funktioniert identisch für den eingebetteten iframe UND den per
+  `window.open()` geöffneten eigenen Tab) Anfragen an die Haupt-Datei schicken kann. Die Haupt-Datei
+  ist und bleibt die einzige Stelle, die tatsächlich etwas am Spielstand ändert und speichert. Neue
+  Konstante `DYSON_WERFT_CHANNEL` sowie Handler `handleDysonWerftMessage()` in der Haupt-Datei (per
+  `window.addEventListener("message", ...)` registriert) — prüft Origin, verarbeitet aktuell nur den
+  Anfragetyp `"ping"` (Antwort `"pong"` inkl. aktuellem `dysonInstallations`-Stand) als Verbindungstest
+  für dieses Grundgerüst, alles andere liefert eine `"error"`-Antwort. Echte Bauteil-/Montage-/Ausbau-
+  Aktionen (Panel montieren, Kollektor-Array, Wandler-Kern, Sonnenschmiede) kommen serverseitig erst ab
+  Phase 13 dazu, sobald drüben in `dysonsphere.html` die dazugehörige Bedienoberfläche existiert.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.15" auf "v0.53.16" erhöht.
+
+v0.53.15
+- 🔆 Dyson-Sphäre, Phase 11 (Sonnenwerft — Datenmodell): Vorbereitung für das neue Ausbau-Vorhaben
+  "Sonnenwerft". Bauteile sollen langfristig nicht mehr zum Mond, sondern direkt zu einer neuen
+  Sonnenwerft bei der Sonne fliegen, dort mit eigener Bauliste (Panel-Montage, Kollektor-Array,
+  Wandler-Kern, später Sonnenschmiede). Diese Version legt dafür ausschließlich das neue, pro Profil
+  gespeicherte Datenmodell `dysonInstallations` an — es wird noch NICHT befüllt oder in der UI benutzt,
+  der bestehende Mond-Weg (Bauteile → künstlicher Mond → Panel-Montage → `dysonLaunch`-Versand zur Sonne)
+  bleibt vollständig unverändert und funktionsfähig, bis die Sonnenwerft in Phase 12/13 tatsächlich
+  angeschlossen wird. `dysonInstallations` enthält: `parts` (eigenes Bauteil-Inventar der Sonnenwerft,
+  gleiche 5 Schlüssel wie `moon.dysonParts`), `panelQueue` (Platzhalter für die künftige eigene
+  Montage-Warteschlange der Sonnenwerft, Struktur analog `moon.panelQueue`), `collectorLevel`
+  (Kollektor-Array-Ausbaustufe), `converterLevel` (Wandler-Kern-Ausbaustufe) und `forgeUnlocked`
+  (Sonnenschmiede-Freischaltung). Speichern/Laden inkl. Bestandsschutz für alte Spielstände ergänzt
+  (`buildSavePayload`, `loadGame`, `newGame`/Reset) — läuft komplett analog zum bestehenden `dysonState`.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.14" auf "v0.53.15" erhöht.
+
+v0.53.14
+- Namens-Auffrischung Teil 2 (Fortsetzung von v0.53.13, gleiches Prinzip: nur Anzeigetexte geändert,
+  interne Keys/Bildpfade/Spielstand-Felder bleiben unangetastet):
+  Spezies „Rock'tal" → „Silicae", „Mechas" → „Synthiden", „Kaelesh" → „Solenari" (inkl. aller
+  Story-/Archiv-Erwähnungen und Komposita wie „Solenari-Relikt"). Offizier „Admiral" von „Flottenkommandant"
+  (v0.53.13) zu „Flottenmeister" korrigiert, um keine Namens-Kollision mit dem Lounge-Offizier
+  „Kommodore" und der Errungenschaft „Flottenkommandant" zu erzeugen.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.13" auf "v0.53.14" erhöht.
+
+v0.53.13
+- Namens-Auffrischung, um Abstand zu OGame-Begriffen zu schaffen (nur Anzeigetexte geändert — interne
+  Keys, Bildpfade und Spielstand-Felder bleiben unangetastet, damit bestehende Spielstände und Icon-
+  Ordner unverändert funktionieren):
+  „Lebensformen"/„Lebensform" → „Genlinien"/„Genlinie" (inkl. „Lebensformpunkte" → „Genlinienpunkte",
+  Kürzel LFP/LFF → GLP/GLF), die 4 klassischen Offiziere Admiral/Ingenieur/Techniker/Geologe →
+  Flottenkommandant/Konstrukteur/Systemanalyst/Extraktionschef, sowie „Schwarzmarkt" → „Schattennetz".
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.12" auf "v0.53.13" erhöht.
+
+v0.53.12
+- 🔆 Dyson-Sphäre — Vollautomatik: Sphärentechnik hat jetzt eine 2. Stufe (deutlich teurer, costFactor
+  greift wie gewohnt), die die Automatik für den kompletten Bauteil-Loop freischaltet:
+  1) Bauteile werden auf jedem passenden Bauteil-Planeten automatisch nachgebaut (höchstens 1 Stück pro
+     Bauteiltyp gleichzeitig in der Werft-Queue, damit noch Platz für eigene Bau-Aufträge bleibt),
+  2) fertige Bauteile wandern automatisch zum gewählten Hauptmond (per abstrahierter "Logistik-Drohne",
+     bewusst OHNE echte Flotten-Transportmission — kein Schiffs-/Treibstoffbedarf, keine Flugzeit, damit
+     die Automatik nie hängen bleibt, nur weil gerade kein Transporter am Bauteil-Planeten steht),
+  3) am Hauptmond wird automatisch die maximal mögliche Menge Panele montiert, sobald kein
+     Montage-Auftrag läuft.
+  Der Panel-Versand zur Sonne bleibt bewusst manuell (der eigentliche Spielerentscheid im Loop).
+  Neuer Ein/Aus-Schalter ("🤖 Vollautomatik") + Hauptmond-Auswahl (★-Knopf je Mond-Karte) auf der
+  Dyson-Seite, beide erst ab Sphärentechnik Stufe 2 sichtbar. Neue Funktion runDysonAutomation(),
+  läuft im Haupt-Tick, tut aber nichts, solange Stufe 2 nicht erforscht oder der Schalter aus ist.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.11" auf "v0.53.12" erhöht.
+
+v0.53.11
+- 🔆 Dyson-Sphäre: die ganze Positionierungs-Strategie seit v0.53.08 (Box fest unter dem Header
+  angepinnt, folgt NICHT dem Scroll) sah unschön aus — sie hing sichtbar losgelöst vom Rest der Seite
+  in der Luft, während der eigentliche Platzhalter (der den Layout-Platz reserviert) beim Scrollen
+  woanders auf der Seite verschwand. Das fühlte sich nicht "im Kasten eingebettet" an, sondern wie ein
+  freischwebendes Fenster.
+  Kompletter Neuansatz: der iframe folgt jetzt wieder ECHT der Position seines Platzhalters
+  "#dysonPipSlot" (position:fixed;left/top exakt nach dessen getBoundingClientRect()), und zwar über
+  eine neue requestAnimationFrame-Schleife (ensureDysonPipTrackingLoop()) statt über einen
+  Scroll-Listener — die zieht die Position jeden einzelnen Frame nach, solange die Dyson-Seite
+  angedockt offen ist. Dadurch klebt die Box butterweich an ihrer eigentlichen Stelle im Layout und
+  scrollt ganz normal mit der Seite mit, statt fest unter dem Header zu hängen.
+  Weil die Box jetzt immer pixelgenau über ihrem Platzhalter sitzt, braucht es auch den in v0.53.09/10
+  eingeführten negativen-z-index-plus-transparenter-Platzhalter-Trick nicht mehr — ganz normaler
+  positiver z-index (2) reicht, Platzhalter bekam wieder seinen normalen opaken Hintergrund zurück.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.10" auf "v0.53.11" erhöht.
+
+v0.53.10
+- 🔆 Dyson-Sphäre: Bugfix für den in v0.53.09 eingeführten Bug — die angedockte 3D-Ansicht war komplett
+  unsichtbar (schwarzer Kasten), weil der Platzhalter-Div ".dyson-pip-wrap" einen opaken Hintergrund
+  (#0A0A0A) hatte. Da dieser Platzhalter ganz normal im Textfluss liegt, wird er automatisch VOR dem
+  iframe gemalt, der seit v0.53.09 mit negativem z-index dahinter liegt — der Platzhalter verdeckte
+  den iframe dadurch vollständig und dauerhaft, nicht nur beim Scrollen.
+  Lösung: Hintergrund des Platzhalters auf transparent gestellt, sodass der iframe in Ruhe sichtbar
+  durchscheint und weiterhin exakt so von scrollenden Karten verdeckt wird wie in v0.53.09 beabsichtigt.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.09" auf "v0.53.10" erhöht.
+
+v0.53.09
+- 🔆 Dyson-Sphäre: die angedockte 3D-Ansicht (Bild-im-Bild) lag bisher mit z-index:500 immer ÜBER dem
+  restlichen Seiteninhalt — jetzt liegt sie im angedockten Zustand mit z-index:-1 dahinter, sodass die
+  Panel-/Sternenenergie-Karten beim Scrollen sichtbar VOR ihr vorbeiziehen (statt sie zu verdecken).
+  Der Vollbild-Umschalter (⛶) bleibt weiterhin klickbar oben drauf. Im Vollbild-Modus selbst bleibt die
+  Ansicht bewusst ganz vorne (sonst wäre sie dort ja unbedienbar).
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.08" auf "v0.53.09" erhöht.
+
+v0.53.08
+- 🔆 Dyson-Sphäre: die spürbare Verzögerung, bis die eingebettete 3D-Ansicht beim Scrollen an ihrer
+  neuen Position ankam, hatte einen konkreten Grund — der Scroll-Listener aus v0.53.04 hing an
+  #mainView, aber tatsächlich scrollt bei AETHERIS das gesamte Dokument/Fenster (der sticky-Header
+  beweist das schon), nicht #mainView selbst. Der Listener feuerte deshalb nie, die Position wurde
+  nur einmal pro Sekunde beim Tick-Render nachgezogen — daher das Hinterherhinken.
+  Lösung: die Box dockt jetzt fest UNTER dem sticky-Header an (position:fixed, oben immer auf Höhe
+  von header.getBoundingClientRect().bottom) und folgt dem Scroll dadurch überhaupt nicht mehr — sie
+  bleibt einfach an Ort und Stelle direkt unterm Header stehen, während der restliche Seiteninhalt
+  (Panel-/Sternenenergie-Karten) beim Scrollen ganz normal darunter hindurchläuft, wie bei anderen
+  Apps mit angedockten Bild-im-Bild-Fenstern. Kein Nachzieh-Delay mehr, weil nichts mehr nachgezogen
+  werden muss. Horizontale Position/Breite weiterhin am Platzhalter ausgerichtet.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.07" auf "v0.53.08" erhöht.
+
+v0.53.07
+- 🔆 Dyson-Sphäre: untere Info-Zeile der 3D-Ansicht ("Ziehen zum Drehen · Scrollen/Pinch zum Zoomen ·
+  ...") auf Wunsch ersatzlos entfernt (unnötig, kostete nur Platz) — betrifft sowohl die eingebettete
+  Bild-im-Bild-Ansicht als auch den eigenständigen Browser-Tab, da beide dieselbe dysonsphere.html
+  nutzen. Vollbild-Umschalter (⛶/✕) zeigt jetzt nur noch das Symbol statt zusätzlich "Groß"/"Schließen"
+  als Text — Button dafür auf ein kompaktes 32×32px-Icon-Format umgestellt.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.06" auf "v0.53.07" erhöht.
+
+v0.53.06
+- 🔆 Dyson-Sphäre: der Kopfbereich der eingebetteten 3D-Ansicht ("🔆 DYSON-SPHÄRE / DEV-UNI —
+  Neutronenstern — Externe 3D-Ansicht / ● Live / Panele verbaut / Sternenenergie") frisst in der
+  kleinen Bild-im-Bild-Box unnötig viel Platz. Das Hauptspiel schaltet ihn jetzt aus, solange die
+  Ansicht klein eingebettet ist (neue Funktion applyDysonPipHeaderState(), setzt per contentDocument
+  eine "pip-compact"-Klasse auf <html> in dysonsphere.html — same-origin, kein postMessage nötig).
+  Sobald man auf "⛶ Groß" tippt, verschwindet die Klasse und der Header ist im Vollbild wie gewohnt
+  da. Der eigenständige Browser-Tab (über "🌌 In eigenem Tab öffnen") zeigt den Header immer normal.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.05" auf "v0.53.06" erhöht.
+
+v0.53.05
+- 🔆 Dyson-Sphäre: die eingebettete 3D-Ansicht (Bild-im-Bild) war auf dem Handy arg klein (feste
+  220px Höhe, auf schmalen Bildschirmen kaum größer als ein paar Textzeilen). Höhe jetzt responsiv per
+  clamp(260px, 42vh, 420px) — auf Handy-Hochformat deutlich größer (~42% der Bildschirmhöhe), auf
+  Desktop bei 420px gedeckelt, damit sie dort nicht überdimensioniert wirkt. Der Vollbild-Knopf (⛶)
+  bleibt zusätzlich für die volle Ansicht erhalten.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.04" auf "v0.53.05" erhöht.
+
+v0.53.04
+- 🔆 Dyson-Sphäre — Bild-im-Bild-Nachbesserung: die 3D-Ansicht lud in v0.53.03 trotz "Portal"-Ansatz
+  weiterhin ständig neu, weil appendChild()-Verschieben eines bereits im DOM hängenden iframe in
+  Chrome/Firefox/Safari selbst ebenfalls einen Reload auslöst (ein bekannter Browser-Sonderfall,
+  unabhängig davon was die Spezifikation vorschreibt). Der iframe (und der Vollbild-Toggle-Button)
+  werden jetzt genau EINMAL erzeugt, hängen dauerhaft direkt an <body> und werden NIE WIEDER
+  verschoben oder entfernt — stattdessen legt eine neue Funktion positionDysonPip() sie per
+  position:fixed + getBoundingClientRect() des unsichtbaren Platzhalters "#dysonPipSlot" exakt
+  darüber. Der sekündliche #mainView-innerHTML-Wipe berührt beide Elemente dadurch überhaupt nicht
+  mehr. Zusätzlich zwei neue Listener (Scroll auf #mainView, Fenster-Resize), damit die Position auch
+  zwischen den Tick-Renders exakt stimmt, z.B. beim Scrollen der Dyson-Seite.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.03" auf "v0.53.04" erhöht.
+============================================================
+
+v0.53.03
+- 🔆 Dyson-Sphäre, Phase 10: Sternenenergie sammelt jetzt auch offline weiter. Bisher lief der
+  Sammel-Tick ausschließlich lokal in der externen 3D-Ansicht (dysonsphere.html), solange diese als
+  eigener Tab geöffnet war — offline (oder bei geschlossenem Tab) passierte nichts. Die Sammlung lebt
+  jetzt stattdessen zentral im Hauptspiel-Tick (neue Funktion starEnergyRatePerHour(), Akkumulation
+  über dtHours in tick()) — exakt dasselbe Muster wie bei Metall/Kristall/Deuterium. Dadurch wird die
+  verstrichene Zeit beim nächsten Laden automatisch nachgerechnet (lastTickGlobal wird beim Laden auf
+  den Speicherzeitpunkt gesetzt), ganz ohne Sonderfall. dysonsphere.html schreibt dadurch nichts mehr in
+  den Spielstand zurück und ist jetzt eine reine Anzeige (liest resourcesReady nur noch); der bisherige
+  Cross-Tab-Sync-Listener im Hauptspiel-Tab (glich fremd geschriebene resourcesReady-Werte ab) entfällt
+  entsprechend ersatzlos.
+- 🔆 Dyson-Sphäre: die 3D-Ansicht lässt sich jetzt direkt auf der Dyson-Seite als Bild-im-Bild anschauen,
+  statt nur als separater Browser-Tab (der Knopf dafür bleibt zusätzlich erhalten, jetzt "🌌 In eigenem
+  Tab öffnen"). Technisch ein <iframe src="dysonsphere.html">, das als dauerhafter DOM-Knoten außerhalb
+  von #mainView lebt und bei jedem der sekündlichen #mainView-Re-Renders per appendChild() hinein-
+  bzw. vorher wieder herausgeschoben wird (Ansatz erwies sich in der Praxis noch als reload-anfällig —
+  siehe Korrektur in v0.53.04). Neuer Vollbild-Umschalter (⛶) auf der eingebetteten Ansicht.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.02" auf "v0.53.03" erhöht.
+
+v0.53.02
+- Energieverbrauch erweitert: bisher haben nur Metallmine, Kristallmine und Deuteriumsynthetisierer Energie
+  verbraucht. Jetzt verbrauchen zusätzlich Forschungslabor (8×Stufe×1.05^Stufe), Robotikfabrik
+  (8×Stufe×1.05^Stufe), Werft (6×Stufe×1.05^Stufe) und Nanitenfabrik (25×Stufe×1.05^Stufe, größter
+  Verbraucher) laufend Energie. Neue zentrale Funktion planetEnergyConsumption(p) ersetzt die 6 verstreuten
+  Inline-Berechnungen (vorher nur Minen). Die Boni dieser 4 Gebäude (Bauzeit, Forschungsgeschwindigkeit etc.)
+  laufen bei Energiedefizit weiter voll — nur die Rohstoffproduktion wird wie bisher gedrosselt. Verbrauch
+  wird jetzt auch im Gebäude-Detail (nächste 10 Stufen) direkt mit angezeigt.
+
+v0.53.00_01
+- Ursache für "Lager setzt Overtop nach ein paar Sekunden zurück" gefunden: KEIN Bug, sondern der
+  Autopilot lief im Hintergrund weiter (Status wird pro Spielstand gespeichert und bleibt an, bis man ihn
+  aktiv wieder ausschaltet — leicht zu übersehen, da bisher nur eine rötliche Knopf-Randfarbe). Der
+  Rohstoff-Ausgleich (autopilotFindResourceTransferOrder) hat jeden übervollen Bestand (≥90% + Overtop
+  gilt erst recht als "voll") automatisch zur Hälfte an bedürftigere Kolonien verschickt — exakt das
+  beobachtete Verhalten (Halbierung, alle 5s, Metall/Kristall betroffen, Deuterium nicht — je nachdem,
+  welche Ressource gerade am vollsten war).
+- Neu: Dauerhaftes, unübersehbares Banner ganz oben auf jeder Seite, solange der Autopilot läuft (bzw.
+  separat eingefärbt, wenn er mangels Treibstoff pausiert ist) — damit das nicht mehr unbemerkt im
+  Hintergrund weiterlaufen kann.
+- Bugfix (Absturz): startConstruction()/meetsRequirement() sind abgestürzt ("item is undefined"), wenn ein
+  Bau-Button noch einen Gebäude-Key referenzierte, den BUILDINGS.find() nicht mehr fand (z.B. durch einen
+  Re-Render zwischen Klick und Verarbeitung). Beide Funktionen brechen jetzt sauber mit return ab, statt
+  eine Exception zu werfen und den gesamten Re-Render abzuwürgen.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.00 Open Beta" auf "v0.53.02" erhöht.
+
+v0.53.00
+- 🤖 KI-Imperien (Phase 9, eigenes Kapitel — siehe DYSON-SPHÄRE-TODO-Block weiter oben, dort jetzt um
+  einen eigenen KI-Imperien-Unterabschnitt ergänzt): erster Baustein umgesetzt. 14 KI-Imperien
+  (`AI_EMPIRE_NAMES`) mit deterministisch generierten Werten (Punkte, geschätzte Kolonienzahl) und
+  deterministischen Heimatkoordinaten in der Galaxie — läuft komplett ohne Speicherbedarf: jedes Profil
+  und jedes Gerät berechnet exakt dieselben Imperien an denselben Koordinaten neu. Wachstum basiert auf
+  einem fixen Real-Zeit-Bezugspunkt (`AI_EMPIRE_EPOCH`, 1. Januar 2026) statt dem eigenen Profilstart —
+  die Imperien wirken dadurch wie eine bereits länger laufende Galaxie im Hintergrund und wachsen weiter,
+  unabhängig davon, wann man selbst zu spielen anfängt oder pausiert ("Offline-Hochrechnung": einfach
+  jederzeit frisch aus der verstrichenen Realzeit berechnet). Wachstum flacht bewusst mit der Wurzel der
+  Stunden statt linear ab, damit die Zahlen auch nach Monaten nicht absurd werden. Galaxie-Ansicht zeigt
+  KI-Imperium-Heimatwelten jetzt als eigene Zeile (🤖, bläulicher Ring im Orbit-Diagramm statt des
+  bisherigen generischen Rot) mit Name, Punktzahl und geschätzter Kolonienanzahl, statt sie wie zuvor nur
+  als generische "Unbekanntes Imperium"-Verknappungsfüllung zu behandeln — echte Profile anderer
+  Spieler/Geräte haben weiterhin Vorrang vor KI-Imperien, die wiederum Vorrang vor der reinen
+  Verknappungsfüllung haben. Das alte, rein clientseitige `rivals`/`gameStartTime`-Paar (Fake-Rangliste
+  ohne echte Wirkung, nur für eine zufällige Namensfloskel bei der Spionage-Gegenmaßnahme genutzt)
+  ersatzlos entfernt — die Spionage-Gegenmaßnahme greift jetzt auf denselben, echten Namenspool
+  (`AI_EMPIRE_NAMES`) zurück wie die sichtbaren Imperien. Altspielstände mit den alten Feldern laden
+  weiterhin ohne Probleme (Felder werden beim Laden einfach ignoriert). Noch offen: Detail-Popup pro
+  Imperium sowie ein späterer Balancing-Durchgang für Anzahl/Wachstumsraten.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.52.07 Open Beta" auf "v0.53.00 Open Beta" erhöht.
+
+v0.52.07
+- 🔆 Dyson-Sphäre (Endgame-Feature), Phase 8 von 9 (siehe DYSON-SPHÄRE-TODO-Block weiter oben):
+  Balancing-Durchgang — alle bisherigen Platzhalterwerte der Sphäre final festgelegt. Gesamt-Panelzahl
+  der fertigen Sphäre auf 1.000 fixiert (`DYSON_SPHERE_TOTAL_PANELS`, ersetzt den alten 5000er-Platzhalter
+  in `dysonsphere.html` — Sternenenergie-Ertrag und Fibonacci-Verteilung der 3D-Ansicht richten sich ab
+  sofort danach). Kosten & Bauzeiten der 5 Bauteile (`DYSON_PARTS`) sowie die Panel-Montagezeit
+  (`DYSON_PANEL_BASE_ASSEMBLY_SECONDS`, jetzt 9h statt 6h bei Werft-Stufe 0) angehoben, damit das
+  Gesamtprojekt bei realistischem Spielfortschritt ein echtes Wochen-/Monate-Endgame-Ziel bleibt statt
+  in wenigen Tagen durchrushbar zu sein. Flug zur Sonne & Rückversand (Phase 4/7) nutzen jetzt eine
+  eigene `dysonTravelSeconds`/`dysonFuelCost`-Formel statt der bisher zweckentfremdeten
+  Angriffsflug-Formel mit Zielsystem = Herkunftssystem (feste 1,5h Basis-Flugzeit pro Richtung bei
+  Antriebstechnik Stufe 0, skaliert wie gewohnt mit Antriebstechnik/Lebensform-Bonus; etwas höherer
+  Treibstoffverbrauch pro Schiff als ein normaler Kurzstreckenflug, da es tatsächlich zur Sonne
+  hinuntergeht statt nur innerhalb des Systems). Roadmap-Checkliste für Phase 8 entsprechend abgehakt.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.52.06 Open Beta" auf "v0.52.07 Open Beta" erhöht.
+
+v0.52.06
+- 🔆 Dyson-Sphäre (Endgame-Feature), Phase 6 von 9 (siehe DYSON-SPHÄRE-TODO-Block weiter oben):
+  Ressourcensynthese. Neue Ressource "Sternenenergie" — kein Lagerlimit, genau wie Ätherium — wird
+  ausschließlich auf der externen 3D-Ansicht (dysonsphere.html) gesammelt, solange die Seite geöffnet
+  ist: Ertrag skaliert mit `panelsBuilt / TOTAL` (Platzhalter-TOTAL, echte Gesamt-Panelzahl der fertigen
+  Sphäre erst Phase 8), läuft bei 0 Panelen entsprechend auf 0. Neue Anzeige oben rechts auf der 3D-Seite
+  zeigt gesammelte Menge live hochzählend + aktuellen Ertrag pro Stunde, dazu ein dezenter Energiefluss-
+  Partikeleffekt von der Sonne nach außen, solange Ertrag > 0. Die 3D-Seite schreibt den gesammelten
+  Betrag (nur `dysonState.resourcesReady`, sonst nichts) direkt in den localStorage-Spielstand zurück —
+  alle paar Sekunden sowie beim Schließen/Verstecken des Tabs (`pagehide`/`visibilitychange`), damit beim
+  Schließen nichts verloren geht. Neuer `storage`-Listener im Hauptspiel übernimmt diesen Wert live in
+  den eigenen In-Memory-Zustand, damit der nächste normale Autosave des Hauptspiel-Tabs die gerade
+  gesammelte Sternenenergie nicht wieder mit einem veralteten Stand überschreibt. Neue Vorschau-Zeile
+  "🌟 X Sternenenergie gesammelt (wartet auf Rückversand)" im Mond-Werft-Abschnitt der Dyson-Sphäre,
+  sobald etwas gesammelt wurde — der eigentliche Rückversand zur Heimatwelt folgt erst in Phase 7.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.52.05 Open Beta" auf "v0.52.06 Open Beta" erhöht.
+
+v0.52.05
+- 🔆 Dyson-Sphäre (Endgame-Feature), Phase 5 von 9 (siehe DYSON-SPHÄRE-TODO-Block weiter oben):
+  Externe 3D-Ansicht. Neue eigenständige Datei `dysonsphere.html` (liegt neben der Hauptdatei) — liest
+  `dysonState` rein lesend direkt aus dem localStorage-Spielstand des zuletzt aktiven Profils (gleiche
+  Origin, gleicher Profil-Speicherschlüssel-Mechanismus wie das Hauptspiel), schreibt selbst nichts
+  zurück. Neuer Knopf "🌌 3D-Ansicht öffnen" im Mond-Werft-Abschnitt "🔆 Dyson-Sphäre — Panel-Montage"
+  (zusammen mit der Gesamtanzeige "X Panele bei der Sonne verbaut") öffnet die neue Seite per
+  `window.open` in einem eigenen Tab — der Hauptspiel-Tab bleibt dabei unverändert an Ort und Stelle
+  stehen, kein Reload, keine Navigation weg vom laufenden Spiel. Die 3D-Szene selbst (Three.js) zeigt
+  ausschließlich tatsächlich fertiggestellte Panele (`dysonState.panelsBuilt`, kein Platzhalter-Füllwerk)
+  als kleine goldene Kacheln um eine leuchtende Sonne, in einer inkrementellen Fibonacci-/Goldener-Winkel-
+  Verteilung: jedes neue Panel bekommt einen festen Platz nach seiner Ankunftsreihenfolge, ältere Panele
+  springen dadurch nie um, wenn neue dazukommen (bewusst so gewählt, weil die finale Gesamt-Panelzahl
+  der fertigen Sphäre erst in Phase 8 feststeht). Neu ankommende Panele faden/skalieren sanft ein statt
+  abrupt zu erscheinen. Eigener `storage`-Event-Listener auf der 3D-Seite: sobald das Hauptspiel-Tab
+  zwischenzeitlich neue Panele verbucht und speichert, holt die offene 3D-Ansicht das automatisch nach
+  und lässt die neuen Panele einfliegen — kein manuelles Neuladen nötig, solange beide Tabs offen bleiben.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.52.04 Open Beta" auf "v0.52.05 Open Beta" erhöht.
+
+v0.52.04
+- 🔆 Dyson-Sphäre (Endgame-Feature), Phase 4 von 9 (siehe DYSON-SPHÄRE-TODO-Block weiter oben):
+  Flug zur Sonne. Neue Missionsart "dysonLaunch" im ganz normalen Flottensystem (`missions[]`) —
+  eigenes Icon/Label "🔆 Dyson-Ausbau", sonst exakt gleiche Datenstruktur/Rückflug-Mechanik wie
+  Angriff/Transport/Expedition. Neue Sektion "🔆 Versand zur Sonne" in der Mond-Werft (nur wenn
+  Panele vorhanden): Schiffsauswahl aus der Mond-Flotte + Panel-Anzahl, Frachtraum-Anzeige wie beim
+  normalen Transport. Reisezeit/Treibstoff bewusst über die bestehende Formel mit Ziel = eigenes
+  System (Platzhalter, echte Distanz-/Balancing-Feinabstimmung erst in Phase 8). Bei Ankunft: Panele
+  verlassen `moon.dysonPanels`, `dysonState.panelsBuilt` wächst, `dysonState.panelsInTransit` verfolgt
+  die gerade unterwegs befindliche Menge — Schiffe kehren danach leer zum Mond zurück, genau wie ein
+  normaler Fracht-Transport. Taucht automatisch in der normalen Flotten-Übersicht (Flotte-Tab +
+  Dashboard) mit Countdown auf, inkl. neuem Ereignisprotokoll-Eintrag bei Ankunft.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.52.00 Open Beta" auf "v0.52.04 Open Beta" erhöht.
+
+v0.52.03
+- 🔆 Dyson-Sphäre (Endgame-Feature), Phase 3 von 9 (siehe DYSON-SPHÄRE-TODO-Block weiter oben):
+  Mond-Montage. Künstliche Monde haben jetzt ein eigenes Bauteil-Inventar (`moon.dysonParts`), das
+  per ganz normalem Fracht-Transport vom Planeten befüllt wird — neuer Sonderfall in `launchTransport`:
+  die sonst geltende Regel "keine Fracht bei Mond-Verbindungen" gilt nicht mehr für Dyson-Bauteile in
+  Richtung Planet → eigener/fremder Mond (jede andere Richtung bleibt gesperrt). Neue UI-Sektion
+  "🔆 Dyson-Bauteile" im Flotte-Tab neben der normalen Fracht-Auswahl, inkl. Max-Knöpfen und Cargo-
+  Anzeige. Auf dem Mond selbst neue Sektion "🔆 Dyson-Sphäre — Panel-Montage" in der Mond-Werft: zeigt
+  das Bauteil-Inventar, verbraucht bei "Montieren" je 1 vollständiges 5er-Set → 1 fertiges Panel
+  (eigener Bau-Slot `moon.panelQueue`, analog zur Mond-Verteidigung inkl. Bauplan-Sofortfertigstellung
+  und Abbrechen-Button mit voller Bauteil-Rückerstattung). Fertige Panele sammeln sich vorerst nur im
+  neuen Zähler `moon.dysonPanels` auf dem Mond — der eigentliche Versand zur Sonne kommt erst in
+  Phase 4. Bestandsschutz für Altspielstände (Monde ohne Bauteil-Inventar) ergänzt.
+
+v0.52.02
+- 🔆 Dyson-Sphäre (Endgame-Feature), Phase 2 von 9 (siehe DYSON-SPHÄRE-TODO-Block weiter oben):
+  Bauteile sind produzierbar. `canBuildDysonPart(part, planet)` prüft Sphärentechnik + passenden
+  Planetentyp. Bauteile hängen sich über die normale Werft-Bauschlange ein (gleicher Mechanismus wie
+  Schiffe, neuer `isDysonPart:true`-Markierung, eigene Zeitformel `dysonPartBuildSeconds`) — fertige
+  Stücke landen im neuen, pro Planet gespeicherten `dysonParts`-Inventar statt in der Flotte. Neue
+  UI-Sektion "🔆 Dyson-Sphäre — Bauteile" in der Werft-Ansicht, zeigt ausschließlich die Bauteile, die
+  auf dem aktuell aktiven Planetentyp herstellbar sind (sonst Hinweis, auf welchem Planetentyp zu
+  suchen ist). Weiterhin ohne Mond-Montage/Transport — kommt in Phase 3.
+
+v0.52.01
+- 🔆 Dyson-Sphäre (Endgame-Feature), Phase 1 von 9 (siehe DYSON-SPHÄRE-TODO-Block weiter oben):
+  Datenmodell steht. Neues Array `DYSON_PARTS` mit den 5 Bauteilen (Trägerstruktur/Gesteinswelt,
+  Kollektorzelle/Vulkanwelt, Steuerkern/Ringwelt, Kühlsystem/Eiswelt, Panzerung/Karge Welt) inkl.
+  Platzhalter-Kosten & -Bauzeiten (Feintuning folgt in Phase 8). Neue Forschung "Sphärentechnik"
+  (Kategorie 🌌 Expansion, ab Expeditionstechnik Stufe 10, maxLevel 1 — reine Freischaltung).
+  Neuer, pro Profil gespeicherter Zustand `dysonState` (panelsBuilt/panelsInTransit/resourcesReady/
+  returnArrival) inkl. Bestandsschutz beim Laden alter Spielstände und Reset bei "Imperium
+  zurücksetzen". Noch komplett ohne UI/Bau-Logik — kommt in Phase 2.
+
+v0.52.00 Open Beta
+- Meilenstein: Anzeige auf der Startseite (Startgate + Titelscreen) zeigt jetzt "v0.52.00 Open Beta"
+  statt der internen Build-Nummer. Rein kosmetisch/Marketing — die interne Versionierung läuft im
+  Hintergrund unverändert weiter (Dateiname bewusst mit "_v051_00_open_beta" versehen, siehe Wunsch).
+
+v0.51_31
+- Neu: Künstliche Verknappung durch "Unbekannte Imperien" — zusätzlich zu echten anderen Profilen
+  (die schon vorher Planeten blockiert haben) blockieren jetzt simulierte "Unbekannte Imperien" 80%
+  der eigentlich freien Planetenplätze (inkl. Ringwelt-Slots), rein zur Verknappung, ohne dass ein
+  echtes Profil dahintersteckt. Rotiert automatisch alle 7 REALZEIT-Tage auf eine neue Zufallsauswahl
+  — bewusst Date.now()-basiert statt Game-Time, damit die Rotation unabhängig von der Uni-Speed immer
+  exakt 7 echte Tage dauert. Komplett deterministisch berechnet (kein Speicherbedarf, kein Save-Feld
+  nötig) — die Blockade wechselt einfach von selbst mit dem nächsten 7-Tage-Fenster. Neue Profile
+  dürfen trotzdem jeden Slot ganz normal als Heimatwelt bekommen (nur echte Kolonisierung wird
+  verknappt). Der Anteil (aktuell 80%) lässt sich über UNKNOWN_EMPIRE_BLOCK_RATIO im Code jederzeit
+  runterdrehen, falls es zu hart ist. Galaxie-Ansicht zeigt betroffene Slots jetzt mit eigenem Tag
+  "Unbekanntes Imperium" (statt "Fremdes Imperium") inkl. Tooltip mit Tagen bis zur nächsten Rotation.
+  Kolonieschiffe, die schon unterwegs zu einem Ziel sind, bleiben von einer neuen Rotation unberührt —
+  die Ankunft war schon immer unabhängig vom Belegungsstatus und bleibt es.
+
+v0.51_30
+- Schwarzmarkt-Rohstoff-Pakete: Design-Entscheidung aus v0.51_29 auf Wunsch revidiert. Statt den Kauf
+  bei vollem Lager zu blockieren, darf ein Schwarzmarkt-Kauf das Lager jetzt bewusst überfüllen (wie im
+  echten Ogame-Item-Shop) — wer genug Dunkle Materie für 1.000 Pakete hat, bekommt auch die volle Menge
+  gutgeschrieben. Der "Max"-Knopf richtet sich deshalb nur noch nach verfügbarer Dunkler Materie, nicht
+  mehr nach freiem Lagerplatz. (Betrifft nur diesen Direktkauf — normale Produktion bleibt weiterhin
+  ganz regulär durch die Lagerkapazität gedeckelt.)
+
+v0.51_29
+- Bugfix Schwarzmarkt: Beim Rohstoff-Paket-"Max"-Knopf wurde die Lagerplatz-Grenze aufgerundet
+  (Math.ceil) statt abgerundet (Math.floor). Dadurch konnte der Max-Knopf ein Paket zu viel vorschlagen,
+  das gar nicht mehr komplett ins Lager passte — die Dunkle Materie wurde trotzdem für das volle Paket
+  abgezogen, während der überschüssige Rohstoff-Anteil beim Kauf stillschweigend verworfen wurde (Lager
+  selbst läuft dank vorhandener Kappung nie tatsächlich über, aber man hat effektiv DM verschwendet).
+  Jetzt wird abgerundet. Zusätzlich: Kaufen-Button für ein Rohstoff-Paket ist jetzt komplett deaktiviert
+  (mit Tooltip "Lager für diesen Rohstoff ist bereits voll"), sobald weniger Lagerplatz übrig ist als
+  ein einzelnes Paket liefert — vorher blieb der Button aktiv und man konnte DM für ein Paket ausgeben,
+  das 0 Nutzen brachte.
+
+v0.51_28
+- Schwarzmarkt: Mengen-Kauf für die 3 Rohstoff-Pakete (Metall/Kristall/Deuterium) ergänzt, wie bei der
+  Werft — Mengen-Eingabefeld + "Max"-Button (begrenzt durch verfügbare Dunkle Materie UND freien
+  Lagerplatz für den jeweiligen Rohstoff). Bauplan/Bautempo/Booster bleiben bewusst Einzelkäufe, da
+  Mengen dort keinen Sinn ergeben.
+
+v0.51_27
+- Echte Freischaltungs-Sperre statt nur UI-Ausblendung: Expeditionen konnten bisher Kapitel der zweiten
+  Chronik "Songs of the Unmapped" freischalten, BEVOR Kapitel 8 ("Letztes Signal") der ersten Chronik
+  überhaupt erreicht war (auch das Finale der zweiten Chronik war betroffen, wenn die Expeditions-
+  Forschung schon hoch genug war). Jetzt hart gegen storyUnlocked.includes("lastsignal") geprüft — kein
+  Kapitel/Finale der zweiten Chronik schaltet sich mehr frei, solange Kapitel 8 nicht erreicht ist.
+  Bereits über Schwellenwerte gesammelte Signal-Fragmente werden automatisch nachgeholt, sobald Kapitel 8
+  freigeschaltet wird (kein Fortschritt geht verloren, er wird nur zurückgehalten).
+
+v0.51_26
+- Story-Archiv: Die zweite Chronik "Songs of the Unmapped" wird jetzt erst angezeigt, sobald Kapitel 8
+  ("Letztes Signal", Key "lastsignal") der ersten Chronik "Echoes of an Eternal Empire" freigeschaltet
+  wurde — vorher komplett ausgeblendet statt nur über Signal-Fragmente separat freigeschaltet zu werden.
+
+v0.51_25
+- Versionsnummer-Anzeige (unten rechts auf Vorstart- und Titelbildschirm) stand seit v0.51_05 fest im
+  Code und wurde bei keinem der Updates seitdem mitgezogen. Jetzt auf v0.51_25 aktualisiert — bitte bei
+  künftigen Versionen dran denken, dieses Label mit anzuheben.
+
+v0.51_24
+- Profil-Verwaltungs-Modal (öffnet sich auf dem Startbildschirm über "Profil"): alle Emojis entfernt
+  (👤 Titel, + bei "Neues Profil anlegen", ⚙️ bei "Alle Profile sichern/übertragen", 🗑 bei den
+  Löschen-Buttons, 🧪 bei der Testumgebung/Dev-Universum).
+- Neues-Profil-Modal: ebenfalls alle Emojis entfernt (+ im Titel, 🌌 bei Universum-Geschwindigkeit,
+  ⚡🚀🌠🌙🐢 bei den Geschwindigkeits-Optionen, 🔒 im Autopilot-Hinweistext) — außer dem 🤖-Emoji beim
+  Autopilot-Account-Häkchen, das bleibt wie gewünscht erhalten.
+
+v0.51_23
+- Sound/Musik in den Einstellungen zeigten trotz letztem Fix noch Emojis — lag daran, dass toggleSound()
+  und toggleMusic() den Button-Text bei jedem Klick per JS neu setzen (zweite Stelle im Code, unabhängig
+  von der HTML-Vorlage) und dabei die Emojis wieder reinschrieben. Jetzt an beiden Stellen bereinigt.
+
+v0.51_22
+- Emojis entfernt: Vorstart-Bildschirm ("Berühren zum Start" ohne ▶ davor), Titelbildschirm-Menü
+  ("Profil:" ohne 👤, "Spiel fortsetzen" ohne ▶, "Neues Spiel" ohne ✦), sowie komplett die
+  Einstellungen-Liste im Mehr-Menü (Sound, Musik, Rangliste, Export, Import, Kolonie zurücksetzen,
+  Zurück zum Titelbildschirm — alle ohne ihre bisherigen Emojis davor).
+
+v0.51_21
+- Mehr-Button-Icon nochmal verkleinert: scale(1.75) → scale(1.45) (~17,5% kleiner).
+
+v0.51_20
+- Unterer "Mehr"-Button: Icon-Bild war wie alle Bottom-Nav-Icons auf scale(2) — im runden 46px-Kreis mit
+  overflow:hidden wirkte das Hamburger-Icon dadurch stärker zugeschnitten/gezoomt als die anderen Tabs.
+  Eigene Override nur für den center-Tab: scale(1.75) (~12,5% kleiner), Rest der Nav unverändert.
+
+v0.51_19
+- Mehr-Menü komplett umgestellt auf den gleichen Kachel-Stil wie beim Planeten-Bau (building-thumb):
+  Bild füllt jetzt die GANZE Kachel als Hintergrund (object-fit:cover), dunkler Verlauf von unten für
+  Lesbarkeit, Name-Text sitzt unten drauf (gold, mit Schatten) statt als kleines zentriertes Icon mit
+  Rand. Kein Herumprobieren an Icon-Pixelgrößen mehr nötig — das Bild ist jetzt einfach so groß wie die
+  Kachel selbst.
+
+v0.51_18
+- Mehr-Menü: Icons zum Testen von 160px zurück auf 124px verkleinert (160px passte nicht mehr /
+  überlappte zu stark). overflow:visible auf der Kachel bleibt drin, falls die Bilder selbst mal über
+  den eigenen transparenten Rand hinausgezeichnet sind.
+
+v0.51_17
+- Mehr-Menü: Icons auf 160px hochgesetzt und overflow:hidden auf der Kachel entfernt (jetzt visible) —
+  Bilder dürfen jetzt über den Kachelrand hinausragen statt abgeschnitten zu werden, Kachelgröße selbst
+  bleibt bei 168px.
+
+v0.51_16
+- Mehr-Menü: Kachelgröße (168px Mindesthöhe) unverändert gelassen, nur die Icon-Bilder nochmal von
+  104px auf 124px vergrößert, wie gewünscht.
+
+v0.51_15
+- Mehr-Menü: Icons von 68px auf 104px und Kachel-Mindesthöhe von 118px auf 168px vergrößert — die
+  vorhandene Fläche im Sheet wird jetzt deutlich besser genutzt, Bilder sind klar größer statt nur
+  leicht angehoben.
+
+v0.51_14
+- Mehr-Menü (unteres Sheet mit Galaxie/Lebensformen/Forschung/Mond/Markt/Offiziers Lounge/Berichte/
+  Archiv/Einstellungen): Kacheln von einer flachen Reihe (Icon 56px absolut zentriert, Text mit dicker
+  schwarzer Outline mittig über dem Bild) auf ein Spalten-Layout umgestellt — Icon jetzt 68px oben,
+  Text sauber darunter statt überlappend. Kachel-Mindesthöhe 118px (vorher deutlich kompakter), nutzt
+  den vorhandenen Platz im Sheet jetzt besser aus.
+
+v0.51_13
+- Schwarzmarkt-Detailansicht: Das Artikelbild wuchs bisher unkontrolliert riesig (nutzte die geteilte
+  .building-detail-hero-Struktur, die eigentlich für kleine Icons gedacht ist) und Preis/Beschreibung
+  lagen dadurch über dem Bild statt sauber darunter. Neue eigene Klasse .market-item-hero mit fester
+  Aspect-Ratio (16:10, object-fit:cover) nur für den Schwarzmarkt — Bild bleibt jetzt in vernünftiger
+  Größe oben, Name/Preis/Beschreibung/Kaufen-Button sitzen sauber untereinander.
+
+v0.51_12
+- Untere Navigation: Icon-Bilder (Übersicht/Planet/Werft/Flotte/Mehr) hatten transform-origin:center bottom
+  bei scale(2) — dadurch wuchsen sie beim Skalieren nach oben statt symmetrisch, saßen also sichtbar nicht
+  mittig im Tab. Auf transform-origin:center center umgestellt. Zusätzlich beim runden "Mehr"-Button
+  overflow:hidden ergänzt, damit das Icon sauber im Kreis bleibt statt am Rand rauszuragen.
+
+v0.51_11
+- Untere Navigation "Mehr"-Tab: Als letzter Nav-Tab nutzte er noch das rohe ☰-Zeichen statt eines Bildes
+  wie Übersicht/Planet/Werft/Flotte. Jetzt gleiches Muster: bilder/icons/navMehr/navMehr_1.png, Fallback
+  bleibt ☰ falls die Datei (noch) fehlt.
+
+v0.51_10
+- Schwarzmarkt: Die 3 verbliebenen rohen 🌌-Emojis (Preis in der Detailansicht, "Kaufen"-Button, Preis-
+  Badge in der Kachel-Leiste) nutzen jetzt dasselbe Dunkle-Materie-Icon-Bild wie die Kopfleiste
+  (bilder/icons/dunkleMaterie/dunkleMaterie_1.png über resIcon()) statt fest verdrahtetem Emoji-Zeichen.
+
+v0.51_09
+- Planetenseite Hero-Titel: Mond-Icons (34px) waren bei align-items:center vertikal zum Namenstext
+  zentriert und ragten dadurch oben über die Overlay-Kante/den Header hinaus. Auf align-items:flex-end
+  umgestellt — Icons sitzen jetzt bündig auf der Grundlinie neben dem Namen statt drüber zu hängen.
+
+v0.51_08
+- Planetenseite (Hero-Titel oben): Mond-Icons neben dem Planetennamen von 16px auf 34px vergrößert
+  (waren neben dem 50px-Planetenbild bisher nur winzige Punkte) — deutlich besser erkennbar, passt
+  jetzt auch von der Größe besser neben das Planetenbild.
+
+v0.51_07
+- Mondansicht: Auch der leere Zustand ("noch kein Mond vorhanden") zeigt jetzt kein reines Emoji mehr,
+  sondern dasselbe echte Mondbild (natürlicher Mond, per System-Seed) als abgedunkelten/entsättigten
+  Platzhalter (opacity 0.35, grayscale 60%) — betrifft die Tabs "Mond 1"/"Mond 2" und den Hinweistext
+  "Um diesen Planeten kreist noch kein Mond". moonSlotIconHtml() übernimmt das zentral, Emoji bleibt nur
+  noch als allerletzter Fallback, falls sogar die Bilddatei fehlt.
+
+v0.51_06
+- Mondansicht: Die letzten 3 verbliebenen reinen Emoji-Icons (ohne Bildanbindung) beim Erschaffen eines
+  künstlichen Mondes wurden auf echte Bilder umgestellt (mit Emoji-Fallback wie überall sonst): der
+  Baufortschritts-Dial während der Entstehung, die Icons der 3 Größen-Kacheln (Klein/Mittel/Groß) in der
+  Auswahl, sowie das kleine Icon im Titel der Mond-Detailansicht (nutzt jetzt moonSlotIconHtml).
+
+v0.51_05
+- Bugfix Autopilot: Im Fokus-Modus ("🏗 Gebäude & Lager" / "🔬 Forschung") hat der Rohstoff-Ausgleich
+  (autopilotFindResourceTransferOrder) den Schlüsselplaneten bisher nur bis 95% Lager-Füllstand beliefert
+  (lowThreshold) — danach galt er als "genug versorgt". Kostet das ANVISIERTE Gebäude bzw. die anvisierte
+  Forschung aber mehr, als das Lager je fassen kann (baseCost*costFactor wächst i.d.R. schneller als
+  storageCap), wurde dieses Ziel dadurch NIE erreicht: der Autopilot wusste nicht mal, worauf er hinsparen
+  sollte, weil autopilotFindBuildCandidate/-FindResearchCandidate nur nach SOFORT bezahlbaren Kandidaten
+  filtern. Ankommende Fracht wird beim Entladen aber gar nicht auf storageCap gedeckelt (ein Planet kann
+  "overtop" beliebig über 100% aufgefüllt werden) — das hat der Autopilot bisher schlicht nicht ausgenutzt.
+  Neu: autopilotFindBuildGoal()/autopilotFindResearchGoal() liefern das nächste anvisierte Ziel OHNE
+  Bezahlbarkeits-Filter (inkl. Kosten). Besteht dafür ein Rest-Defizit, zapft die neue Funktion
+  autopilotFindGoalTransferOrder() JEDE andere Kolonie komplett an (nicht nur deren Überschuss über 90% wie
+  beim normalen Ausgleich) und liefert so lange über die sonstige 95%-Grenze hinaus an den Schlüsselplaneten
+  (bzw. beim Fokus "Forschung" an den zahlenden aktiven Planeten), bis das Ziel bezahlbar ist. Sobald Bau
+  oder Forschung tatsächlich startet, verschwindet das Defizit von selbst wieder, und der normale
+  ratio-basierte Ausgleich übernimmt erneut — übriger Überschuss wandert damit automatisch zur nächsten
+  bedürftigen Kolonie weiter, ganz ohne Sonderfall.
+
+v0.51_04
+- Bugfix Autopilot: Zwei Nachbesserungen am Transporter-Nachbau aus v0.51_03. Erstens war die
+  Ziel-Stückzahl von 8 "Großer Transporter" pro Planet fest — früh im Spiel unnötig hoch, spät im Spiel
+  (riesige Lagerkapazitäten dank hoher Speicher-Ausbaustufen) viel zu niedrig, um den vollen Speicher in
+  EINER gebündelten Fuhre wegzutransportieren. Jetzt berechnet autopilotCargoLargeTarget() das Ziel
+  dynamisch je Planet: so viele Transporter, dass ihre Frachtkapazität (je 2500 Einheiten, ggf. höher durch
+  Hyperraum-Technologie) ungefähr die größte Lagerkapazität (Metall/Kristall/Deuterium) des Planeten deckt
+  — 8 bleibt nur noch die Untergrenze fürs frühe Spiel. Zweitens wurden Transporter bisher ausschließlich im
+  Schritt "Flotte" nachgebaut, der im Fokus-Modus "🏗 Gebäude & Lager" (und jedem anderen Fokus außer
+  "Flotte") gar nicht in der Support-Reihenfolge lief (siehe autopilotFocusOrderFor) — der Transporterbestand
+  blieb dort also bei 0 stecken. autopilotStepResourceBalance ruft die Bau-Prüfung (jetzt eigene Funktion
+  autopilotFindCargoBuildCandidate) nun zusätzlich selbst auf, läuft also in jedem Fokus mit.
+- Hinweis: Das Losschicken der Fracht war bereits vorher gebündelt — pro Tick wird höchstens EIN
+  Transport-Auftrag gewählt und alle dafür nötigen Transporter (klein + groß) fliegen als eine einzige
+  Flotte/Mission los (launchTransport), nicht einzeln nacheinander. Mit mehr verfügbaren Transportern durch
+  obigen Fix passen jetzt einfach größere Ladungen in diese eine Fuhre.
+- Bugfix Autopilot: Kampf- & Transportschiffe wurden pro Tick (alle paar Sekunden) IMMER nur einzeln
+  nachbestellt — auch wenn die Rohstoffe längst für viele auf einmal gereicht hätten. Jetzt wird pro
+  Warteschlangen-Eintrag die tatsächlich benötigte bzw. mit den aktuellen Ressourcen bezahlbare Stückzahl
+  auf einmal geordert (maxAffordableCount — dieselbe Logik wie beim "Max"-Knopf in Werft/Mondwerft), statt
+  gefühlt "alle 5 Sekunden 1 Schiff pro Planet".
+
+v0.51_03
+- Bugfix Autopilot: Bestätigt — der Autopilot hat bisher NIE von sich aus "Großer Transporter" gebaut.
+  Der Flotten-Schritt hat ausschließlich Kampfschiffe (category "militaer") berücksichtigt; Transporter
+  wurden nur in exakt der Stückzahl gebaut, die eine einzelne Kolonisierung gerade brauchte, danach nie
+  wieder. Ohne eigene Transporter konnte der Rohstoff-Ausgleich (autopilotFindResourceTransferOrder)
+  aber gar keine Fracht bewegen — das hat u.a. den neuen Fokus "Gebäude & Lager" ausgebremst, siehe
+  vorheriger Eintrag. Jetzt rüstet der Autopilot pro Planet einen Mindestbestand von 8 "Großer
+  Transporter" nach (AUTOPILOT_MIN_CARGO_LARGE), sobald das Kampfschiff-Ziel für diesen Planeten erreicht
+  ist — als feste Logistik-Grundausstattung fürs Rohstoff-Verteilen zwischen Kolonien.
+- UI Flotte: "Transport & Flotte verlegen" (inkl. Stationieren) und "Expedition" sind jetzt einklappbare
+  Karten (Standard: zugeklappt), damit man im Flotte-Tab nicht mehr durch beide voll ausgeklappten
+  Formulare scrollen muss, um z.B. bei "Flotten unterwegs" oder der Verteidigungs-Übersicht zu landen.
+- UI Flotte: Die reine Info-Karte "Verteidigung auf [Planet]" wieder entfernt (gehörte dort ohnehin nicht
+  hin — Verteidigung wird weiterhin über Werft/Verteidigung gebaut, nicht im Flotte-Tab).
+- Bugfix Autopilot: Im Fokus "🏗 Gebäude & Lager" hat der Autopilot bisher weiterhin auf ALLEN Planeten
+  gleichzeitig ein bisschen gebaut (genau wie im Standard-Modus) und der Rohstoff-Ausgleich hatte für
+  diesen Fokus keinen "Schlüsselplaneten" definiert — dadurch wurden Ressourcen nie gezielt auf einen
+  Planeten gebündelt, sondern nur breit verteilt ausgeglichen. Jetzt bestimmt autopilotFocusKeyPlanet()
+  auch für "buildings" einen Schlüsselplaneten (den mit der aktuell niedrigsten Gesamt-Ausbaustufe),
+  autopilotStepBuildings baut in diesem Fokus NUR noch dort, und der Rohstoff-Ausgleich holt gezielt
+  Nachschub von den anderen Planeten heran. Ist der Planet aufgeholt, wandert der Fokus automatisch zum
+  nächstschwächsten Planeten weiter — genau das Planet-für-Planet-Verhalten, das eigentlich gewollt war.
+
+v0.50_103
+- Bugfix (mobil): Massiver Bug in der Werft behoben — beim Eintippen einer Stückzahl im Mengenfeld
+  hat das Spiel einen jede Sekunde erneut ausgelöst (der sekündliche Tick rendert die Seite neu und
+  hat das fokussierte Eingabefeld per focus() zurückgeholt, damit man beim Tippen nicht rausfliegt).
+  Auf dem Handy löst focus() aber automatisch ein Scroll-ins-Sichtfeld aus — dadurch wurde man jede
+  Sekunde wieder zum Eingabefeld runtergeschoben, sobald man hochgescrollt hat (z.B. um den
+  "Max"-Knopf zu erreichen). Fix: focus({preventScroll:true}) statt focus() — Fokus/Tastatur bleiben
+  erhalten, aber ohne erzwungenes Zurückscrollen.
+- Neu: Max-Knopf ("M") direkt auf den Werft-/Verteidigungs-Kacheln neben dem Mengenfeld ergänzt
+  (setzt automatisch die maximal bezahlbare Stückzahl ein) — bisher gab's den Max-Knopf nur im
+  aufgeklappten Detailpanel, nicht auf der kompakten Kachel-Zeile selbst.
+
+v0.50_102
+- Bugfix: Massiver Freeze-Bug behoben, der auftrat sobald eine Expedition losgeschickt wurde. Ursache:
+  targetLabel(m.targetId) wurde in renderOverviewView() (Übersichtsseite) auch für Expeditions-Missionen
+  aufgerufen, deren targetId aber bewusst null ist (kein festes Ziel im unkartierten Raum). Das führte zu
+  einem JS-Fehler ("Cannot read properties of null"), der die komplette Render-Funktion abbrach — daher
+  eingefrorenes Spiel und leere/verschwundene Übersichtskarte. targetLabel() ist jetzt robust gegen
+  null/Expeditionen, und die Übersichtsseite zeigt bei Expeditions-Flotten passend "🛰 Expedition · <Tiefe>"
+  statt eines Zielsystems an.
+
+v0.50_101
+- Neu (Schritt 2/2): Signal-Fragmente & zweite Story-Chronik "Songs of the Unmapped". Expeditionen
+  können jetzt (ab Expeditionstechnik Stufe 2, nur bei "Mittlere Tiefe"/"Tiefe Leere") als seltenen
+  Sonderfund ein Signal-Fragment mitbringen — eigenständige Sammel-Mechanik analog zu den
+  Artefakt-Fragmenten, aber ausschließlich aus Expeditionen (keine Anomalien). Sieben Sammelstufen
+  (SIGNAL_TIERS) schalten je einen thematischen Expeditions-Bonus frei (Fundchance, Treibstoff,
+  Verlustrisiko, Beute, Bonus-Schiff-Chance, Flugzeit, weitere Fragment-Chance) UND je ein Kapitel der
+  neuen, komplett eigenständigen zweiten Chronik im Story-Archiv — Prolog + 7 Kapitel + Epilog (9
+  Texte, analog zur ersten Chronik aufgebaut). Der Epilog schaltet sich bei Expeditionstechnik Stufe 10
+  frei, als Gegenstück zum Hyperraumtechnik-Finale der ersten Chronik. Ein Kapitel verknüpft die neue
+  Reihe inhaltlich mit der Kaelesh-Chronik ("Echoes of an Eternal Empire"), bleibt aber mechanisch
+  komplett unabhängig davon. Sichtbar als zweiter aufklappbarer Kopfbereich im Story-Archiv, als
+  Statuszeile in der Expeditionskarte (Flotte-Tab) sowie im Ereignis-Log (inkl. Kurzfassung auf der
+  Übersicht). Save/Load-Migration für Bestandsspielstände ohne Signal-Fragmente ergänzt.
+
+v0.50_100
+- Neu (Schritt 1/2): Expeditionen. Neue Forschung "Expeditionstechnik" (Kategorie 🌌 Expansion, ab
+  Astrophysik Stufe 3) schaltet im Flotte-Tab die Karte "🛰 Expedition" frei — Flotten fliegen dabei
+  NICHT zu einem konkreten Planeten/System, sondern in unkartierten Raum (kein Eingriff ins bestehende
+  30-System-Galaxieraster). Drei wählbare Tiefen (Nahes Sondieren/Mittlere Tiefe/Tiefe Leere) mit
+  unterschiedlicher Flugzeit, Treibstoffkosten, Mindest-Flottengröße sowie Risiko/Ertrag. Bei Rückkehr
+  entscheidet ein Zufallsergebnis: nichts gefunden, Rohstoffe, Dunkle Materie, geborgene Bonus-Schiffe,
+  Flottenverluste oder eine Verspätung. Jede weitere Stufe der Expeditionstechnik erhöht Fundchance/
+  Beute und senkt das Verlustrisiko. Sichtbar in der laufenden Flottenliste und im Ereignis-Log
+  (inkl. Kurzfassung auf der Übersicht). Schritt 2 (Anbindung an eine neue Story-Kapitelreihe über
+  seltene "Signal-Fragmente" aus Expeditionen) folgt als nächstes.
+
+v0.50_99
+- Bugfix: Auf einem Planeten, dessen Vernichtung bereits per Kauf läuft ("💥 Vernichtung läuft"-Karte),
+  sowohl über die Gebäude-Detailansicht/Kachelübersicht als auch (unbemerkt) über den Autopiloten.
+  Das ergab keinen Sinn, da der Planet ohnehin automatisch aufgegeben wird, sobald die Wartezeit
+  abläuft. Ausbau- und Abreißen-Buttons sind während einer laufenden Vernichtung jetzt konsequent
+  ausgegraut/gesperrt (Kacheln zeigen "Planet wird vernichtet" als Hinweis), und auch der Autopilot
+  lässt so einen Planeten beim Gebäude-Bauen jetzt komplett aus.
+
+v0.50_98
+- Bugfix: Alle verbliebenen nativen Browser-Dialoge (window.confirm() bei "Planet verlassen",
+  "Planet vernichten", "Mond zerstören", "Zurück zum Titelbildschirm", Profil/Dev-Uni löschen,
+  Spielstand importieren usw. — sowie window.alert() bei Export-/Import-Fehlern) wurden auf das
+  bereits vorhandene eigene, thematisch passende Bestätigungsfenster (showConfirmDialog) bzw. eine
+  neue Hinweis-Variante davon (showAlertDialog) umgestellt. Native Dialoge öffneten sich in manchen
+  eingebetteten Ansichten (z.B. der Android-App/WebView) gar nicht erst oder sahen dort unpassend
+  aus — jetzt läuft wirklich JEDE Bestätigung/JEDER Hinweis im Spiel über das eigene In-App-Fenster.
+  Zusätzlich bekam das Fenster einen höheren z-index, damit es auch über dem Start-/Titelbildschirm
+  sichtbar ist (vorher lag es dort unsichtbar dahinter).
+
+v0.50_97
+- Neu: Ein bebauter (nicht leergebauter) Planet kann jetzt auch per Kauf vernichtet werden, ohne
+  vorher jedes Gebäude einzeln manuell zurückzubauen. Bezahlt wird mit Dunkler Materie + Ätherium
+  (Preis skaliert mit der Summe aller noch stehenden Gebäudestufen), dafür gibt's KEINEN
+  Sofort-Effekt, sondern eine Wartezeit (30 Min. Sockel + 2 Min. pro Gebäudestufe, ebenfalls
+  skalierend) — danach wird der Planet automatisch endgültig aufgegeben. Sichtbar als neue Karte
+  "💥 Planet vernichten" unten auf der Planeten-Übersicht, direkt über/statt der bisherigen
+  "🪐 Planet leergebaut"-Karte, je nachdem ob der Planet noch bebaut ist. Läuft die Vernichtung
+  bereits, zeigt die Karte stattdessen einen Fortschrittsbalken mit Countdown.
+
+v0.50_96
+- Neu: In den Einstellungen gibt es jetzt einen Knopf "🚪 Zurück zum Titelbildschirm" (unterhalb von
+  "Kolonie zurücksetzen"). Er speichert den aktuellen Spielstand, fragt kurz zur Bestätigung nach und
+  kehrt dann zum Start-/Titelbildschirm zurück (mit "Spiel fortsetzen"-Option), statt das Spiel wie
+  bisher nur über das Schließen der App zu verlassen.
+
+v0.50_95
+- Bugfix: Die sichtbare Versionsanzeige (unten rechts auf Vorstart-/Start-Seite) blieb bei den letzten
+  Änderungen fälschlich auf "v0.50_93" stehen, obwohl der Code längst weiter war. Ab jetzt wird bei
+  jeder inhaltlichen Änderung konsequent sowohl die Versionsanzeige im Spiel als auch der Dateiname
+  der Ausgabedatei mit hochgezählt, nicht nur der Changelog-Kommentar im Quelltext.
+
+v0.50_94
+- Nachbesserung Neue Profile: Der Heimatplanet-Slot darf wie gewohnt zufällig sein (irgendein Planet
+  im zufällig gewählten System) — unabhängig davon bekommt die Heimatwelt jetzt aber IMMER die
+  Bedingungen der "Erdähnlichen Welt" (+5% auf Metall, Kristall UND Deuterium) erzwungen, exakt wie
+  Profil 1 auf seinem festen Platz. Vorher hätte ein zufälliger Slot auch einen zufälligen (ggf.
+  deutlich schlechteren) Planetentyp bedeutet, z.B. eine Gasriese mit -40% Metall. Die Bild-Variante
+  richtet sich weiterhin nach dem tatsächlichen Slot/System, damit Heimatwelten optisch variieren.
+- Bugfix Neue Profile: Ein neues Profil bekam bisher einen komplett zufälligen Slot (1-11) und damit
+  einen zufälligen Planetentyp zugewiesen — je nach Glück z.B. eine Gasriese (-40% Metall) statt der
+  "Erdähnlichen Welt" (+5% auf Metall, Kristall UND Deuterium), auf der Profil 1 fest startet. Neue
+  Profile bekommen jetzt ebenfalls fest Slot 3 (Erdähnliche Welt) zugewiesen — nur das Startsystem
+  wird weiterhin zufällig (aber überschneidungsfrei) gewählt. Gleiche Startbedingungen für alle.
+- Nachbesserung Story-Archiv: Nicht nur die einzelnen Kapitel, sondern der komplette Kopfbereich
+  "📖 Echoes of an Eternal Empire" ist jetzt selbst der Klapp-Schalter — standardmäßig zugeklappt,
+  erst ein Tap darauf zeigt die Kapitelliste (Prolog, Kapitel 1-8, Epilog) überhaupt an. Innerhalb
+  davon lässt sich weiterhin jedes einzelne Kapitel separat auf-/zuklappen.
+- Bugfix Story-Archiv: Aufgeklappte Kapitel ließen sich teils nicht mehr zuverlässig wieder zuklappen
+  (bzw. sprangen beim nächsten Spiel-Tick unkontrolliert auf/zu), weil der Hauptbereich bei jedem
+  render() komplett neu aus HTML aufgebaut wird und der <details>-Zustand dabei verloren ging. Der
+  Auf-/Zugeklappt-Zustand jedes Kapitels (Prolog, Kapitel 1-8, Epilog) wird jetzt explizit gemerkt und
+  bei jedem Neu-Rendern korrekt wiederhergestellt — auf-/zuklappen funktioniert jetzt zuverlässig.
+- Story-Archiv erweitert: Ein neuer "Prolog" steht jetzt immer ganz oben im Archiv, von Anfang an
+  sichtbar (kein Freischalten nötig) — bisher gab es gar keinen einleitenden Text, man "bekam ihn nie
+  mit", weil er schlicht nicht existierte.
+- Alle Kapitel im Story-Archiv (inkl. Prolog und Epilog) sind jetzt einzeln einklappbar (Tap auf die
+  Überschrift öffnet/schließt den Text), statt den vollen Fließtext dauerhaft auszuklappen — hält das
+  Archiv übersichtlich, auch wenn in Zukunft weitere Kapitel dazukommen.
+- Neu: Preis-Skalierung für künstliche Monde (Ätherium). Jeder bereits bestehende künstliche Mond im
+  gesamten Imperium (beide Mond-Slots, alle Planeten zusammengezählt) macht den nächsten künstlichen
+  Mond ca. 65% teurer als den davor (exponentiell: 1., 2., 3. Mond usw. — Faktor 1,65 pro bereits
+  vorhandenem Mond). Zerstört man einen künstlichen Mond wieder, sinkt der Preis für den nächsten
+  automatisch entsprechend, da live aus dem tatsächlichen Bestand gerechnet wird (kein separater,
+  dauerhafter Zähler). Trümmer-Monde (natürlich entstanden nach Schlachten) zählen nicht mit und
+  kosten weiterhin nichts. Im "✨ Künstlichen Mond erschaffen"-Menü wird der aktuelle, ggf. bereits
+  erhöhte Preis direkt angezeigt, inkl. Hinweis, wie viele künstliche Monde man schon besitzt.
+
+v0.50_93
+- Korrektur zu v0.50_92: Treibstoff-Preise waren feste Zahlen — im späten Spiel lächerlich billig, am
+  Spielanfang (kaum eigene DM-/Ätherium-Produktion) kaum bezahlbar. Der Preis pro Treibstoff-Stunde richtet
+  sich jetzt dynamisch nach der TATSÄCHLICHEN empireweiten DM-/Ätherium-Produktion pro Stunde — der
+  Autopilot "frisst" also immer einen bestimmten Anteil des eigenen Outputs, egal wie weit man im Spiel ist.
+  Ein Mindestpreis greift nur, solange noch gar keine eigene Produktion existiert. Längere Pakete (12 Std./
+  1 Tag/7 Tage) behalten ihren Mengenrabatt gegenüber dem reinen Stundenpreis.
+
+v0.50_92
+- Neu: Autopilot-Treibstoff. Der Autopilot läuft nicht mehr unbegrenzt kostenlos, sondern braucht
+  Laufzeit-Pakete (6 Std. / 12 Std. / 1 Tag / 7 Tage), die im Autopilot-Fenster mit Dunkler Materie
+  UND Ätherium (vom aktiven Planeten) gekauft werden — Pakete stapeln sich, wenn schon Guthaben da ist.
+  Ist der Treibstoff aufgebraucht, pausiert der Autopilot komplett (Knopf wird orange, Info-Fenster zeigt
+  Kaufbuttons), bis nachgekauft wird — läuft danach automatisch sofort weiter.
+  Ausnahme: reine Autopilot-Accounts (Nebenprofile, die den Autopilot laut Auswahl bei der Profil-Erstellung
+  von Anfang an ohne Forschung nutzen dürfen) sind komplett von diesem Verbrauch befreit.
+  Bestandsschutz: bestehende Spielstände ohne dieses Feld bekommen einmalig 24h Startguthaben geschenkt,
+  damit der Autopilot nicht ohne Vorwarnung beim nächsten Laden sofort pausiert.
+- Korrektur zu v0.50_91: gleicher Bug wie beim Verteidigungsbau auf Planeten war auch bei der
+  Mond-Verteidigung vorhanden (fixe Stückzahl 10, immer nur billigste Anlage). Mond-Verteidigung
+  skaliert jetzt ebenfalls dynamisch (gleiche Zielkraft wie der zugehörige Planet) und wählt das
+  beste Kraft-pro-Rohstoff-Verhältnis statt stur das billigste.
+
+v0.50_91
+- Autopilot-Fix: Verteidigungs- und Angriffsflottenbau haben bisher bei einer FESTEN Stückzahl komplett
+  aufgehört (10 Verteidigungsanlagen bzw. 15 Kampfschiffe pro Planet) — egal wie stark die Piraten im
+  weiteren Spielverlauf wurden. Im Verteidigungs-Fokus wurden dadurch z.B. dauerhaft nur 10 Raketenwerfer
+  gebaut und nie stärkere Anlagen (Flak, Ionenkanone, Plasmawerfer).
+  Jetzt skaliert die Verteidigung dynamisch mit der tatsächlichen Piratenbedrohung dieses Planeten
+  (raidPowerTarget × PIRATE_ATTACK_CONFIDENCE × Sicherheitsmarge) statt mit einer festen Einheitenzahl,
+  und wählt bei der Bauauswahl das beste Kraft-pro-Rohstoff-Verhältnis statt stur das billigste — dadurch
+  werden auch stärkere Verteidigungsanlagen automatisch mitgebaut, sobald erforscht & bezahlbar.
+  Die Angriffsflotte behält 15 Schiffe als Mindest-Untergrenze, baut aber darüber hinaus weiter, solange
+  die eigene Angriffskraft nicht einmal gegen das stärkste bekannte Piratennest (+ Sicherheitsmarge) reicht.
+  Der Fokus-Knopf "🛡 Verteidigung" / "⚔ Angriff" ändert weiterhin nur die Bearbeitungsreihenfolge der
+  Kategorien pro Tick — durch die neuen dynamischen Zielwerte baut der Autopilot in diesen Fokus-Modi jetzt
+  aber tatsächlich dauerhaft weiter, statt früh komplett stehen zu bleiben.
+
+v0.50_90
+- Gleiche Textumrandung wie im "Mehr"-Menü jetzt auch auf den Planeten-Karten der Übersichtsseite
+  (Name, System, Ressourcenwerte, Status): schwarzer Outline-Effekt für bessere Lesbarkeit über
+  hellen Planetenbildern, zusätzlich zum bestehenden dunklen Verlauf.
+
+v0.50_89
+- Korrektur zu v0.50_88: Der Hintergrund-Chip hinter dem Text verdeckte das Icon zu großflächig.
+  Stattdessen jetzt eine echte Textumrandung (schwarzer Outline-Effekt rundum jeden Buchstaben) —
+  guter Kontrast auch über hellen Bildern, ohne das Icon großflächig zu verdecken.
+
+v0.50_88
+- "Mehr"-Menü Kontrast-Fix: reiner Text-Schatten reichte über hellen Original-Bildern (v.a. am PC)
+  nicht als Kontrast — Text-Label hat jetzt stattdessen einen dunklen, leicht transparenten
+  Hintergrund-Chip (mit Blur) hinter sich, der sich eng um den Text legt statt die Kachel-Breite
+  einzunehmen.
+
+v0.50_87
+- Bugfix Kachel-Zentrierung: Der Kachel-Container hatte gar kein display:flex gesetzt, wodurch die
+  Zentrierung aus v0.50_86 ins Leere lief (Text blieb schmal statt volle Breite zu bekommen). Jetzt
+  liegen Icon und Text wirklich beide mittig in der Kachel.
+
+v0.50_86
+- Nachbesserung "Mehr"-Menü: Icon und Text liegen jetzt beide mittig zentriert in der Kachel (statt
+  links), Text-Schatten deutlich dunkler/stärker für bessere Lesbarkeit über dem Icon.
+
+v0.50_85
+- "Mehr"-Menü: Kachel-Icons liegen jetzt größer im Hintergrund links-zentriert hinter dem Text
+  (statt daneben), Label-Text bekommt einen starken Schatten für Lesbarkeit über dem Icon.
+
+v0.50_84
+- Piratenüberfälle komplett umgebaut (OGame-artig, realistischer): Piraten greifen nicht mehr sofort
+  mit voller, ungebremster Stärke an, sondern bauen ihre Streitmacht pro Planet über PIRATE_BUILDUP_HOURS
+  (48 Spielstunden) kontinuierlich auf — genau wie der Spieler seine Verteidigung. Sie greifen erst an,
+  sobald ihre aufgebaute Stärke die aktuelle Verteidigungskraft des Planeten um den Faktor
+  PIRATE_ATTACK_CONFIDENCE (1,15x) übersteigt — echte Übermacht ist damit möglich, wer schneller
+  Verteidigung aufbaut als die Piraten Stärke, bleibt praktisch sicher. Nach jedem Angriff (egal ob
+  gewonnen oder verloren) ist die Piratenstreitmacht komplett verbraucht und muss sich erst wieder neu
+  aufbauen. Angriffshäufigkeit (sobald angriffsbereit) leicht erhöht (0,05→0,15/Spielstunde), da sie
+  jetzt seltener überhaupt "bereit" sind.
+
+v0.50_83
+- Korrektur zu v0.50_82: Nicht Forschung, sondern der Fokus-Knopf "🛡 Verteidigung" wird jetzt bei
+  KI-Forschung Stufe 3 freigeschaltet (statt bisher Stufe 7). Forschung bleibt wie ursprünglich bei
+  Stufe 8 (letzter Fokus-Knopf). Reihenfolge jetzt: Expansion (1), Gebäude & Lager (2),
+  Verteidigung (3), Mond & Lebensform (4), Rohstoff-Ausgleich (5), Flotte (6), Kampf & Bergung (7),
+  Forschung (8).
+
+v0.50_81
+- 🌌 Flotten-Übersicht erweitert: Standort-Zeilen (Planet/Mond) sind jetzt antippbar — springt direkt
+  dorthin und öffnet die Werft (bzw. Mond-Werft) mit vorausgewähltem Schiffstyp, damit man sofort
+  weiterbauen kann, statt manuell hinnavigieren zu müssen.
+
+v0.50_80
+- Neu (Idee aus dem Werft-Bugreport): 🌌 Flotten-Übersicht in der Werft — Knopf "Alle Schiffe im
+  Universum" öffnet eine Liste aller besessenen Schiffstypen mit Gesamtzahl. Antippen klappt einen
+  Schiffstyp auf und zeigt genau, wo die Schiffe gerade stehen: pro Planet, pro Mond, in der
+  Werft-Warteschlange und unterwegs auf Missionen (die ja beim Start aus der Planeten-Flotte
+  abgezogen werden und sonst "verschwunden" wirken würden).
+
+v0.50_79
+- Bugfix Werft: Die Zahl auf den Schiffs-Kacheln zeigte den Imperium-weiten Gesamtbestand (alle
+  Planeten + Monde + Warteschlangen) statt der Anzahl auf dem aktuellen Planeten — man musste erst lange
+  drücken und das Detail-Panel öffnen, um zu sehen, was hier tatsächlich steht. Kachel zeigt jetzt direkt
+  den Planeten-Bestand; der Imperium-Gesamtwert (bei Schiffen mit Maximalbestand relevant) steht weiterhin
+  im Long-Press-Tooltip und im Detail-Panel.
+
+v0.50_78
+- Bugfix Mehr-Menü: Kacheln mit zweizeiligem Text-Label ("Offiziers Lounge") ließen die zweite Zeile
+  unten aus der Kachel-Box herausragen, statt die Box mitwachsen zu lassen. Ursache: das Label als
+  Flex-Kind hatte kein min-width:0, wodurch der Browser die nötige Zeilenumbruch-Höhe beim Grid-Layout
+  falsch berechnet hat. Label wächst jetzt korrekt mit, Icon+Text sind zusätzlich vertikal zentriert.
+
+v0.50_77
+- Autopilot-Info-Fenster (Mobil-Fix): Die 3 Blöcke Fokus, Standard-Prioritäten-Reihenfolge und
+  Aktions-Protokoll sind jetzt einzeln einklappbar (Tap auf die Überschrift), statt fest untereinander
+  zu stehen — auf kleinen Bildschirmen musste man bisher weit scrollen, um überhaupt zum Protokoll zu
+  kommen. Nur das Protokoll startet aufgeklappt, Fokus/Reihenfolge starten zugeklappt. Zustand gilt nur
+  für die laufende Sitzung, wird nicht im Spielstand gespeichert.
+
+v0.50_76
+- Neu: 🧪 Dev-Universum als eigene Testumgebung. Im Menü "👤 Profil verwalten" per Ein-Klick-Button
+  "🧪 Dev-Universum erstellen" anlegbar — eigenes Profil mit 10.000x Geschwindigkeit, zusätzlich stark
+  verkürzten Bau-/Forschungs-/Schiffszeiten (normalerweise unabhängig von der Uni-Geschwindigkeit) sowie
+  automatisch aufgefüllten Rohstoffen (50 Mio Metall/Kristall/Deuterium, 5 Mio Ätherium je Planet) und
+  Dunkler Materie (500k). Über "🗑 Dev-Universum löschen" jederzeit rückstandslos wieder entfernbar, ohne
+  das Hauptprofil zu berühren.
+
+v0.50_75
+- Nachbesserung Lebensform-Unterarten (v0.50_74): Die Wahl ist jetzt endgültig statt frei wechselbar —
+  einmal gewählt, bleibt die Unterart aktiv. Die jeweils andere Unterart derselben Spezies ist danach
+  gesperrt ("🔒 Umsiedlung nötig") und nur noch erreichbar, indem der Planet umgesiedelt und die
+  Lebensform komplett neu hochgezogen wird (setzt subtype zurück auf ungewählt, wie schon bisher bei
+  jeder Umsiedlung).
+
+v0.50_74
+- Neu: Jede Lebensform-Spezies hat jetzt 2 wählbare Unterarten (Menschen: "Fraktion", sonst "Kaste"/
+  "Protokoll"/"Orden") mit jeweils eigenem passivem Bonus — Handelsbund/Expansionsrat (Menschen),
+  Krieger-/Gelehrtenkaste (Rock'tal), Kampf-/Effizienzprotokoll (Mechas), Seher-/Wächterorden (Kaelesh).
+  Freischaltung erst später über Bedingungen (Lebensform-Stufe 8 + ein bestimmtes Gebäude dieser Spezies
+  auf Stufe 5), danach jederzeit frei zwischen den freigeschalteten Unterarten wechselbar (kein Ressourcen-
+  /Zeitaufwand). Nutzt bewusst keine neuen Bilder, sondern das Bild eines bereits vorhandenen Lebensform-
+  Gebäudes derselben Spezies wieder. UI-Sektion auf der Lebensformen-Seite zwischen Technologien und
+  "Spezies wechseln".
+
+v0.50_73
+- Startbildschirm: Noten-Icon (Musik-Einstellungen-Knopf) ist jetzt rot eingefärbt statt Standard-Emoji-Farbe
+  (Kreis-Rahmen/Hintergrund des Knopfs bleiben unverändert, nur das Symbol selbst ist betroffen).
+
+v0.50_72
+- Untere Haupt-Navigation (Übersicht/Planet/Mehr/Werft/Flotte): Text-Labels unter den Icons entfernt,
+  nur noch Icons sichtbar. Die Liste im "Mehr"-Menü (Galaxie, Lebensformen, Forschung, Mond, Markt,
+  Offiziers Lounge, Berichte, Archiv, Einstellungen) behält weiterhin ihre Text-Labels.
+
+v0.50_71
+- Startbildschirm: Reihenfolge der Menü-Knöpfe geändert — "👤 Profil: <Name>" steht jetzt ganz oben,
+  darunter folgen "▶ Spiel fortsetzen" und "✦ Neues Spiel" (bisher war Profil ganz unten).
+
+v0.50_70
+- Bugfix Logo-Zentrierung (v0.50_69): Die Zentrierung war an die Klasse "game-logo" gebunden — beim
+  Text-Fallback (falls weder bilder/logo.png noch logo/aetheris_logo.svg laden) entfernt das Skript diese
+  Klasse aber, wodurch der Fallback-Titel wieder aus der Mitte rutschte. Zentrierung jetzt an die feste
+  Element-ID gebunden statt an die Klasse — Bild-Logo und Text-Fallback stehen beide mittig.
+
+v0.50_69
+- Startbildschirm (Hauptmenü, titleScreen): Logo steht jetzt exakt in der Bildschirmmitte, unabhängig von
+  der Höhe des Menüs darunter. Die 3 Menü-Knöpfe ("Spiel fortsetzen"/"Neues Spiel"/"Profil") samt
+  Spielstand-Info sind dafür Richtung unteren Bildschirmrand gerutscht, statt wie bisher gemeinsam mit dem
+  Logo als eine Gruppe zentriert zu werden. Der Vorstart-Bildschirm ("Berühren zum Start") ist davon nicht
+  betroffen.
+
+v0.50_68
+- Startbildschirm: Musik-Einstellungen ("🎵 Musik"-Knopf + Lautstärke-Regler) zu einem kleinen runden
+  Icon-Knopf direkt über der Versionsnummer zusammengefasst (🎵 = an, 🔇 = stumm). Klick öffnet ein kleines
+  Pop-up darüber mit Stumm-Schalter und Lautstärke-Regler; Klick daneben schließt es wieder.
+
+v0.50_67
+- Bugfix: Knöpfe mit Klasse "menu-btn" waren nur innerhalb des Startbildschirms (.title-screen) farblich
+  gestylt — überall sonst, wo dieselbe Klasse in einem Pop-up verwendet wird (z.B. im neuen "Profil
+  verwalten"-Fenster, aber auch "Profil erstellen", "Los geht's!", "Alle Profile exportieren" u.a.),
+  erschienen sie dadurch als unformatierte weiße Standard-Buttons. Styling entsperrt, gilt jetzt überall —
+  "🗑 Profil unwiderruflich löschen" ist wieder rot (Klasse "danger").
+
+v0.50_66
+- Nachbesserung Startbildschirm (v0.50_65): Der Profil-Kasten ist jetzt zu einem einzigen kompakten Knopf
+  "👤 Profil: <Name>" zusammengefasst — Klick öffnet ein Pop-up mit Profilauswahl, "+ Neues Profil anlegen",
+  "Alle Profile sichern/übertragen" und "Profil löschen" (bisheriges Verhalten unverändert, nur in ein
+  eigenes Fenster verlegt statt dauerhaft sichtbar). Der Knopf zeigt immer den Namen des aktuell aktiven
+  Profils an.
+
+v0.50_65
+- Startbildschirm (Profilauswahl) umgebaut: Die Profil-Steuerung (Auswahl, "+ Neues Profil anlegen",
+  "Alle Profile sichern/übertragen", "Profil löschen") steckt jetzt in einem einzigen, sichtbar
+  abgegrenzten Kasten und liegt darin unterhalb von "▶ Spiel fortsetzen"/"✦ Neues Spiel" statt wie
+  bisher davor.
+
+v0.50_64
+- Nachbesserung "Mehr"-Menü (v0.50_63): Icon wuchs durch transform-origin:right nach links über den
+  Kachelrand hinaus. Linkes Innenpolster der Kachel vergrößert (46px statt 12px) — Icon+Label-Gruppe
+  rutscht dadurch als Ganzes nach rechts und wirkt zentriert/ausbalanciert; die Kachelgröße selbst
+  (Grid-Spalten) bleibt unverändert.
+
+v0.50_63
+- Bugfix Icon-Vergrößerung (v0.50_61): Die auf 200% vergrößerten Bild-Icons haben an Stellen direkt neben
+  Text (v.a. im "Mehr"-Menü: "Mond"→"nd", "Archiv"→"chiv", "Markt"→"rkt") den Anfang des Labels verdeckt.
+  Statt Text zu verschieben wurde stattdessen der Skalierungs-Ursprung (transform-origin) jedes Icons auf
+  die Kante gelegt, die zum Nachbar-Text zeigt (rechts bei Icon-links/Text-rechts wie Header-Gauges,
+  "Mehr"-Menü und Fließtext-Icons; unten bei Icon-oben/Label-unten wie untere Navigation) — das Icon wächst
+  jetzt nur noch in die freie Richtung, Kästen bleiben unverändert, Text wird nicht mehr verdeckt.
+
+v0.50_62
+- Bugfix Lebensform-Seite: Kopfzeile (LFP/LFF) und Bevölkerungs-Titel nutzten noch reinen Text/Emoji statt
+  der Bild-Icons (wie im Header schon üblich) — jetzt über dasselbe Icon-System (bilder/icons/lebensform
+  bzw. bilder/icons/lebensformForschung, mit Emoji-Fallback).
+- Bugfix Lebensform-Technologien: Die Forschungskosten wurden fälschlich als "LFP" angezeigt (auch in der
+  "Nicht genug ..."-Meldung am Knopf) — tatsächlich bezahlt wird mit Lebensform-Forschungspunkten (LFF),
+  jetzt korrekt beschriftet, inkl. Icon. Gleiche Verwechslung auch in mehreren Code-Kommentaren korrigiert.
+
+v0.50_61
+- Umbau KI-Forschung (Autopilot): Statt einmalig erforschbar (Stufe 1) jetzt 8 Stufen. Jede Stufe schaltet
+  genau einen neuen Fokus-Knopf im Autopilot-Info-Fenster frei, in fester Reihenfolge: Stufe 1 Expansion,
+  2 Gebäude & Lager, 3 Mond & Lebensform, 4 Rohstoff-Ausgleich, 5 Flotte, 6 Kampf & Bergung, 7 Verteidigung,
+  8 Forschung. Mit Klick auf einen freigeschalteten Fokus-Knopf arbeitet der Autopilot ab dem nächsten Tick
+  strikt nur noch auf diese eine Kategorie hin (alle anderen Kategorien pausieren) — inkl. automatischer
+  Rohstoff-Bündelung auf den dafür wichtigsten Planeten (z.B. bei Fokus "Forschung" auf den Planeten mit dem
+  höchsten Forschungslabor, bei "Flotte"/"Kampf & Bergung" auf den mit der höchsten Werft) und Gebäude-Ausbau
+  als Unterstützung, falls die Fokus-Kategorie selbst gerade nicht weiterkommt. Ein neuer Knopf "Standard"
+  beendet den Fokus-Modus wieder und lässt den Autopiloten wie gewohnt alle Kategorien der Reihe nach
+  abarbeiten.
+- Die bisherige, per Drag&Drop/▲▼ frei umsortierbare Prioritäten-Reihenfolge bleibt zusätzlich bestehen,
+  ist aber erst ab KI-Forschung Stufe 8 (voll ausgebaut) nutzbar — vorher wird sie ausgegraut mit
+  Sperrhinweis angezeigt.
+- Bestehende Spielstände mit bereits erforschter KI-Forschung Stufe 1 (aus v0.50_59) werden beim Laden auf
+  Stufe 1 des neuen Systems abgebildet (schaltet also nur den Expansion-Fokus frei) — die restlichen 7
+  Stufen müssen nachträglich erforscht werden.
+
+v0.50_60
+- Bugfix: Ressourcen-Popup im Header (Klick auf die Kompakt-Leiste) zeigte nur Metall/Kristall/Deuterium an —
+  Dunkle Materie und Ätherium fehlten dort, obwohl sie in der Kompakt-Leiste selbst schon sichtbar waren.
+  Jetzt ergänzt, inkl. Förderrate/h bei Dunkler Materie.
+- Ringwelt-Reparatur überarbeitet: Kosten pro Stufe verdreifacht. Reparatur läuft jetzt nicht mehr sofort
+  durch, sondern braucht Zeit (2h/8h/16h/24h je Stufe) wie ein normaler Bauauftrag — inkl. Fortschrittsbalken
+  und Sofort-Fertigstellen gegen 5 Baupläne. Das bisherige Reparatur-Fenster ist standardmäßig versteckt und
+  klappt sich über einen neuen 🔧-Knopf direkt im Ringwelt-Bild auf/zu (zeigt während der Reparatur die
+  Restzeit live an).
+- Neu: Ringwelt-Reparaturstufe 5 "Ringwelt-Kern stabilisieren" — schaltet sich nach Stufe 4 (kein Malus mehr)
+  frei, braucht 3 Tage (bzw. 15 Baupläne zum Sofort-Fertigstellen) und stellt den echten +15%-Ringwelt-Bonus
+  auf Metall/Kristall/Deuterium obendrauf wieder her.
+- Warp-Tunnel-Hintergrund (Start-/Vorstart-Seite): Sternschlieren mischen jetzt vereinzelt blaue und rote
+  Lichtschlieren unter das normale Warp-Weiß — sichtbar nur bei (annähernd) voller Warp-Geschwindigkeit,
+  blenden während der gemächlichen Fahrt (Sonnen-Vorbeiflug) komplett aus. Dazu neuer kurzer, heller
+  Warp-Blitz aus der Bildmitte genau in dem Moment, in dem das Schiff wieder vollen Warp-Speed erreicht.
+- Entfernt: Baumansicht (🌳-Tab im Mehr-Menü, das Gebäude-/Schiff-/Verteidigungs-/Forschungsbaum-Popup)
+  komplett entfernt, inkl. zugehöriger Funktionen und Styles.
+
+v0.50_59
+- Neu: Beim Erstellen eines NEUEN Profils lässt sich der Haken "🤖 Autopilot-Account" nur noch setzen, wenn
+  der Autopilot bereits irgendwo im Spiel tatsächlich freigeschaltet wurde — egal ob auf dem Hauptprofil
+  oder auf einem beliebigen anderen Profil (jeweils durch "Intergalaktisches Forschungsnetzwerk" Stufe 1).
+  Vorher ist die Checkbox ausgegraut/deaktiviert mit Hinweistext, damit sich nicht beliebig viele
+  Autopilot-Profile "aus dem Nichts" anlegen lassen. Bereits bestehende Profile mit diesem Haken (auch
+  vor diesem Update angelegte) sind davon nicht betroffen — reiner Bestandsschutz, es geht nur um NEU
+  zu erstellende Profile.
+- Neu: Forschung "KI-Forschung" (Kategorie Wirtschaft, benötigt Intergalaktisches Forschungsnetzwerk Stufe 1,
+  einmalig erforschbar). Schaltet für den Autopiloten eine eigene Prioritäten-Reihenfolge der Kategorien
+  frei: 1. Expansion, 2. Gebäude & Lager, 3. Mond & Lebensform, 4. Rohstoff-Ausgleich, 5. Flotte,
+  6. Kampf & Bergung, 7. Verteidigung, 8. Forschung. Ohne die Forschung läuft der Autopilot unverändert in
+  der bisherigen festen Reihenfolge weiter — bestehende Spielstände ändern ihr Verhalten also nicht von
+  selbst.
+- Neu: Ist die KI-Forschung aktiv, lässt sich die Prioritäten-Reihenfolge im Autopilot-Info-Fenster
+  (🤖 → i) direkt umsortieren — per Drag&Drop am Griff (⠿, Maus & Touch) oder über die ▲▼-Knöpfe je Zeile.
+  Die Liste ist auch bei ausgeschaltetem Autopiloten sichtbar/bedienbar, damit sich die Reihenfolge in Ruhe
+  vorab einstellen lässt. Wirkt ab dem jeweils nächsten Autopilot-Tick, wird sofort gespeichert.
+- Intern: autopilotTick() dafür in einzelne Kategorie-Funktionen (autopilotStepExpansion/-Buildings/
+  -MoonLifeform/-ResourceBalance/-Fleet/-Combat/-Defense/-Research) zerlegt, die über AUTOPILOT_STEP_FUNCS
+  in der jeweils aktiven Reihenfolge nacheinander ausgeführt werden.
+
+v0.50_58
+- Neu: Autopilot gleicht jetzt auch Rohstoffe ZWISCHEN Kolonien aus. Bisher gab es nur den Markt-Tausch
+  innerhalb eines einzelnen Planeten (Ressource A gegen B) — eine schwach ausgebaute Außenkolonie konnte
+  dadurch irgendwann nicht mehr mitbauen, während anderswo im Imperium Lager überliefen. Findet einmal pro
+  Tick höchstens einen Transport: Quelle = Planet mit einer Ressource nahe am Lagerlimit (≥90%), Ziel =
+  ein anderer Planet, auf dem genau diese Ressource fast leer ist (≤15%). Nutzt dafür die Klein-/
+  Großtransporter, die gerade am Quell-Planeten stehen — baut absichtlich KEINE eigenen dafür nach (würde
+  sonst mit dem Kampfschiff-/Recycler-Nachbau um dieselbe Werft-Schlange konkurrieren); stehen keine da,
+  bleibt der Ausgleich diesen Tick aus und wird beim nächsten erneut versucht.
+
+v0.50_57
+- Bugfix Autopilot: Die Prüfung "hab ich schon genug Kampfschiffe/Bergungsschiffe auf diesem Planeten?"
+  zählte bisher nur die Schiffe, die gerade physisch auf dem Planeten standen — nicht die, die gerade auf
+  Mission unterwegs waren (Angriff auf Piratennest/Anomalie, Trümmerfeld-/Anomalie-Bergung). Nach jedem
+  Losschicken fiel der Bestand also kurzzeitig auf 0, und der Autopilot fing sofort wieder von vorne an
+  nachzubauen (billigster Kampfschiff-Typ zuerst = praktisch immer Kleiner Jäger) — daher die spürbar
+  hohe Dauerproduktion an Kleinen Jägern und Bergungsschiffen. Die Prüfung zählt jetzt die komplette
+  unterwegs befindliche Flotte mit (volle Stärke bei noch nicht ausgekämpften Missionen, tatsächliche
+  Überlebende bei bereits ausgekämpften aber noch nicht gelandeten) — Verluste im Kampf lösen weiterhin
+  berechtigten Nachbau aus, ein normaler Hin-/Rückflug aber nicht mehr.
+
+v0.50_56
+- Neu: Schiffe können jetzt in der Werft-Detailansicht verschrottet werden ("🗑 Verschrotten"-Zeile
+  erscheint unter dem Bauen-Bereich, sobald mindestens ein Schiff dieses Typs auf dem Planeten steht).
+  Stückzahl eingeben oder "Max" für den kompletten Bestand, danach Bestätigungsdialog. Es gibt 50% der
+  Baukosten zurück (gleiche Quote wie beim Gebäude-Abriss), läuft aber sofort ohne Bauzeit durch — sinnvoll
+  z.B. um vom Autopiloten überproduzierte Kleine Jäger/Recycler wieder loszuwerden. Nur Schiffe, die
+  physisch auf dem Planeten stehen, keine im Bau oder unterwegs befindlichen.
+
+v0.50_55
+- Bergungsschiffe (♻️, 20000 Laderaum) konnten beim normalen Verlegen/Transport zwischen eigenen Planeten
+  als Frachtraum missbraucht werden — dadurch waren die eigentlichen Transporter (Klein/Groß, 500/2500)
+  komplett überflüssig. Ihr Laderaum zählt jetzt nur noch bei der Trümmerfeld-/Anomalie-Bergung (ihrem
+  eigentlichen Zweck); im Verlegen-Popup sind sie weiterhin als Schiff auswählbar (z.B. um sie zu einem
+  Vorposten zu verlegen), tragen dort aber nicht mehr zur Frachtraum-Anzeige oder zum Auto-Füllen bei.
+
+v0.50_54
+- Kolonieschiffe haben jetzt selbst etwas Laderaum (1000, vorher 0) — sie fliegen bei der Besiedlung ja
+  sowieso mit, da macht ein bisschen eigene Frachtkapazität Sinn und nimmt etwas Druck von den extra
+  benötigten Transportern. Fließt konsistent überall ein: Auto-ausfüllen-Rechnung im Kolonisieren-Popup
+  (zeigt jetzt auch an, wie viel die Kolonieschiffe schon mitbringen), die Start-Prüfung beim tatsächlichen
+  Losschicken und die Autopilot-Machbarkeits-/Baulogik.
+
+v0.50_53
+- Kleinigkeit: Autopilot-Button im Header zeigt den aktiven Zustand jetzt in kräftigem Rot (#FF3B30)
+  statt Gold — deutlich kontrastreicher erkennbar, ob der Autopilot gerade läuft.
+
+v0.50_52
+- Fertigstellung der Kolonisierungs-Umstellung aus v0.50_51 (war mitten drin abgebrochen, Datei stand
+  in einem kaputten Zwischenzustand): der Kolonisieren-Button in der Galaxie-Ansicht rief noch die
+  bereits entfernte alte colonize()-Funktion auf (ReferenceError beim Klick), ebenso der Autopilot bei
+  jedem Expansionsversuch. Beide rufen jetzt korrekt das neue Vorraussetzungs-Popup bzw. launchColonization()
+  auf.
+- Das komplette HTML-Markup für das Kolonisieren-Popup (Overlay, Sheet, Schließen-Button) fehlte im DOM,
+  obwohl openColonizeModal()/renderColonizeModal() bereits fertig programmiert waren — Popup blieb
+  unsichtbar. Jetzt ergänzt, gleiches Muster wie Zielplanet-/Baumansicht-Popup, inkl. Klick-außerhalb-
+  schließt.
+- Ringwelt-Reparatur (repairRingworld()) war fertig programmiert, aber über keinen Button erreichbar.
+  Neue Karte in der Planetenansicht zeigt jetzt aktuellen Produktions-Malus, Kosten der nächsten Stufe
+  und einen Reparieren-Knopf, nur sichtbar auf Ringwelten unterhalb der letzten Reparaturstufe.
+- Autopilot-Expansion (Schritt 8) komplett auf das neue Vorraussetzungs-System umgestellt: prüft jetzt
+  pro Ziel, ob ein Planet Kolonieschiffe + Rohstoffe + ausreichend Frachtkapazität (Transporter) wirklich
+  stemmen kann, statt wie vorher pauschal von "1 Kolonieschiff genügt" auszugehen. Kann die anvisierte
+  Ringwelt (noch) nicht gestemmt werden, weicht der Bot auf einen normalen Planeten aus, statt komplett
+  zu blockieren, und baut im Hintergrund konzentriert auf einem Werft-Planeten erst fehlende Kolonieschiffe,
+  dann fehlende Transporter nach.
+
+v0.50_51
+- Nachtrag zur Baumansicht: neuer Tab „🔬 Forschung" — Forschungen haben teils eigene Abhängigkeiten
+  untereinander (z.B. Plasmatechnik ← Fördertechnik 8, Hyperraumtechnik ← Antriebstechnik 5, Intergalak-
+  tisches Forschungsnetzwerk ← Computertechnik 8 + Forschungslabor 10 auf irgendeinem Planeten), die in
+  den Schiff-/Gebäude-/Verteidigungsbäumen nur als Randnotiz auftauchten. Jetzt als eigener Baum sichtbar,
+  inklusive Text-Hinweis für Gebäude-Voraussetzungen außerhalb des Forschungsbaums selbst.
+- Umzug: Der Baum-Zugang ist aus dem Header-Icon raus und jetzt ein regulärer Eintrag „🌳 Baum" im
+  Mehr-Menü (neben Archiv/Einstellungen).
+- Nachtrag zur Baumansicht: Knoten zeigen jetzt die echten Vorschaubilder (bilder/gebaeude/, bilder/schiffe/,
+  bilder/verteidigung/) statt nur Emoji-Icons — gleiche onerror-Fallback-Logik (planetThumb()) wie überall
+  sonst im Spiel, fällt also lautlos aufs Icon zurück, solange die jeweilige Bilddatei fehlt.
+- Neu: Baumansicht (🌳-Button oben im Header) — zeigt Gebäude-, Schiff- und Verteidigungsbaum jeweils als
+  eigene Lane-Grafik: pro Zeile eine Forschung, Knoten darin nach benötigter Stufe aufsteigend sortiert
+  und mit Pfeilen verkettet (z.B. Kreuzer → Zerstörer → Schlachtkreuzer → Schlachtschiff → Bomber →
+  Weltenbrecher in der Lasertechnik-Zeile). Items ohne Forschungsvoraussetzung liegen in der obersten
+  „Basis"-Zeile nebeneinander. Zusätzliche Gebäude-Voraussetzungen (z.B. Nanitenfabrik braucht Robotik-
+  fabrik Stufe 10) werden als gestrichelter Pfeil quer über die Lanes gezogen. Reine SVG-Generierung zur
+  Laufzeit aus BUILDINGS/SHIPS/DEFENSES, keine zusätzlichen Bilddateien nötig.
+- Balancing: Zerstörer-Angriffswert 650 → 720. Vorher war seine Kosten-Effizienz (Angriff+HP pro Ressource)
+  schlechter als die des günstiger zu erforschenden Schlachtkreuzers — reiner Lückenfüller ohne eigenen
+  Daseinszweck. Jetzt liegt er wieder zwischen Kreuzer und Schlachtkreuzer, wie von der Beschreibung
+  („starkes Verhältnis aus Feuerkraft und Baukosten") behauptet.
+- Balancing: Erste Lebensform-Ansiedlung auf einem Planeten braucht jetzt Metallmine Stufe 5 auf genau
+  diesem Planeten (LIFEFORM_SETTLE_REQUIREMENT). Vorher war chooseLifeform() komplett voraussetzungsfrei
+  — theoretisch schon in Minute 1 nutzbar, obwohl das System sich wie ein Mid-/Lategame-Feature liest.
+  Sperre ist bewusst niedrig angesetzt (Metallmine 5 kostet nur ~300 Metall/76 Kristall), blockiert also
+  nicht spürbar, sorgt aber für eine kleine Grundausbaustufe vor der Ansiedlung. UI zeigt bei Sperre einen
+  🔒-Hinweis mit fehlender Bedingung, Ansiedeln-Buttons sind deaktiviert; Autopilot prüft dieselbe Sperre
+  vor dem automatischen Ansiedeln.
+
+v0.50_50
+- Neu: Lebensform-Seite (Gebäude & Technologien) läuft jetzt auf demselben Schema wie Bau/Werft/Forschung —
+  großes Detail-Panel oben (Hero-Icon, Beschreibung, Kosten, Bau-/Erforschen-Button) mit Kachelleiste
+  darunter zum Durchklicken, statt der alten Tile-Grid-Liste. Bau-Fortschritt erscheint direkt im
+  Detail-Panel als Kreisdiagramm+Balken, sobald das gerade ausgewählte Gebäude im Bau ist.
+- Neu: Bildpfade für Lebensform-Gebäude/-Technologien ergänzt (bilder/lebensformgebaeude/<key>/<key>_1.png,
+  bilder/lebensformtech/<key>/<key>_1.png), gleiches Fallback-Prinzip wie überall sonst.
+- Neu: Rohstoff-Icons (Metall/Kristall/Deuterium) in allen Kosten-/Ertragszeilen im ganzen Spiel (Bau,
+  Werft, Verteidigung, Mond, Lebensformen, Markt) zeigen jetzt Bild-Icons statt Emoji, mit automatischem
+  Emoji-Fallback — nutzt dieselben Bilder wie die Header-Gauges (bilder/icons/<key>/<key>_1.png).
+- Neu: „Spezies wechseln" auf der Lebensform-Seite ist jetzt eingeklappt (nur ein „🔄 Umsiedeln"-Knopf).
+  Erst ein Klick öffnet die Auswahl der übrigen Spezies mit Kosten & Umsiedeln-Button; „Abbrechen" klappt
+  wieder zu, nach erfolgreicher Umsiedlung schließt sich die Auswahl automatisch.
+
+v0.50_47
+- Neu: Flotte-Seite ist jetzt mondfähig. Herkunfts-Reiter (Planet / Mond 1 / Mond 2) oben in der Flotte-Karte
+  zeigt & steuert wahlweise die Planeten- oder die Mond-Flotte. Der Transport-Zielpicker akzeptiert jetzt
+  auch den eigenen Planeten als Ziel (für Planet↔Mond-Verlegungen) und bietet bei mehreren Slots am Ziel
+  eine Ziel-Slot-Auswahl.
+- Neu: Verlegungen innerhalb derselben Umlaufbahn (Planet↔eigener Mond, Mond1↔Mond2) laufen sofort, ohne
+  Flugzeit und ohne Treibstoff. Haben beide Enden ein aktives Sprungtor (Stufe 1+), gilt dasselbe automatisch
+  auch zwischen zwei verschiedenen Planeten — ganz ohne manuellen Sprungtor-Dialog.
+- Fracht bleibt wie gehabt nur zwischen zwei Planeten möglich (Monde haben keinen eigenen Speicher); bei
+  jeder Mond-Beteiligung werden ausschließlich Schiffe verlegt, die Fracht-Sektion blendet sich dafür aus.
+- Bugfix/Robustheit: kehrt eine Flotte zurück, während der Mond, von dem sie gestartet ist, inzwischen
+  zerstört wurde, landet sie sicherheitshalber auf dem zugehörigen Planeten statt verloren zu gehen.
+
+v0.50_46
+- Neu: Der Schwarzmarkt ist jetzt eine eigene Unterseite statt in die Markt-Seite eingebettet zu sein.
+  Auf der Markt-Seite steht an seiner Stelle jetzt ein breiter, zentrierter Button "Schwarzmarkt" (ohne
+  Emoji) — antippen öffnet die neue Schwarzmarkt-Seite mit ◀-Zurück-Button zum Markt. Der Markt-Reiter
+  in der unteren Navigation bleibt dabei aktiv markiert
+
+v0.50_45
+- Neu: Die Schwarzmarkt-Sektion auf der Markt-Seite sieht jetzt genauso aus wie Planet/Werft/Forschung —
+  eine große Detailansicht für den aktuell ausgewählten Artikel (Name, Preis, Beschreibung, Kaufen-
+  Button) darunter eine Kachel-Leiste zum Umschalten, gruppiert nach Kategorie (Sofortfertigstellung,
+  Bautempo, Rohstoff-Booster, Rohstoffe direkt kaufen), statt der vorherigen langen Liste einzelner
+  Karten
+- Bugfix (nebenbei entdeckt): Der Schwarzmarkt-"Kaufen"-Button hatte zusätzlich zur eigenen Klasse auch
+  die generische "upg"-Klasse, wodurch bei jedem Kauf zwei Klick-Handler gleichzeitig feuerten — der
+  zweite (eigentlich für Gebäude-Ausbau gedacht) lief ins Leere und erzeugte einen stillen Konsolen-
+  Fehler. Jetzt sauber getrennt
+
+v0.50_44
+- Balancing: Bauplan (Schwarzmarkt, Sofortfertigstellung) kostet jetzt 1800 statt 450 Dunkle Materie.
+  Vorher war er trotz stärkerem Effekt (100% statt 90% Restzeit) UND breiterer Anwendung (alle vier
+  Warteschlangen-Arten statt nur einer) günstiger als die Gold-Beschleuniger (Kraken/Detroid/Newtron,
+  1100-1350 DM) — die hatten dadurch praktisch keinen Daseinszweck mehr. Bauplan ist jetzt eine echte
+  Premium-Notfalloption über allen Gold-Beschleunigern statt deren billigerer Ersatz
+
+v0.50_43
+- Bugfix: In der System-Ansicht lag hinter jedem Planetenbild dauerhaft ein Fallback-Icon (Emoji) im
+  Hintergrund, das nur bei fehlgeschlagenem Bild sichtbar werden sollte. Bei der Ringwelt schien das
+  Ring-Emoji durch das transparente Loch in der Bildmitte hindurch — sah aus wie ein zweiter,
+  hässlicher Ring in der Mitte. Fallback-Icon ist jetzt standardmäßig unsichtbar und wird nur noch
+  eingeblendet, wenn das Planetenbild tatsächlich nicht lädt
+
+v0.50_42
+- Bugfix: In der System-Ansicht (Galaxie) wurde bei Ringwelten die Orbit-Linie hässlich durch das
+  transparente Loch in der Bildmitte hindurch sichtbar. Grund: Der dunkle Hintergrund-Kreis hinter
+  jedem Planetenbild war nur halb-transparent (fill-opacity 0.5) statt blickdicht — bei normalen
+  (vollflächigen) Planetenbildern fällt das nie auf, bei der Ringwelt mit ihrem hohlen Zentrum aber
+  schon. Hintergrund-Kreis ist jetzt vollständig blickdicht, dahinterliegende Linien scheinen nicht
+  mehr durch
+
+v0.50_41
+- Neu: Das Bestätigungsfenster beim Abreißen eines Gebäudes ist jetzt ein eigenes, ins Spielthema
+  passendes Fenster (Icon, Titel, Text, "Abbrechen"/"Abreißen"-Buttons) statt des schmucklosen
+  Browser-Popups. Technisch als wiederverwendbare showConfirmDialog()-Funktion gebaut, damit weitere
+  Bestätigungsfenster (Planet verlassen, Mond zerstören, etc.) bei Bedarf einfach mit umgestellt
+  werden können
+
+v0.50_40
+- Bugfix: Der "🗑 Abreißen"-Button auf Kolonien reagierte manchmal gar nicht auf Klick/Tap (kein
+  Bestätigungsfenster, kein Rückbau) — Ursache war eine Race-Condition mit dem sekündlichen Neuaufbau
+  der Planeten-Seite: Landete der Klick genau in dem Moment, in dem die Seite neu gerendert wurde,
+  wurde der Button-Knoten mitten im Klick durch einen neuen ersetzt und der Klick ging spurlos ins
+  Leere. Der Klick-Handler hängt jetzt nicht mehr am einzelnen Button, sondern dauerhaft (delegiert)
+  an der Seite selbst — die überlebt jeden Re-Render unbeschadet
+
+v0.50_39
+- Bugfix: Im Transport-/Flotte-verlegen-Fenster lasen die "Max"-Buttons (Deuterium, Ressourcen,
+  Schiffe) sowie "Frachtraum füllen" und "Alle nehmen" den verfügbaren Bestand aus einem beim letzten
+  Fensteraufbau eingefrorenen Wert statt aus dem tatsächlich aktuellen Planeten-Bestand. Lief z.B. im
+  Hintergrund das Fusionskraftwerk weiter und verbrauchte Deuterium, während das Fenster offen blieb,
+  planten diese Buttons mit einem zu hohen (veralteten) Wert — Start scheiterte dann lautlos, obwohl
+  am eigentlich verfügbaren Deuterium gerechnet kein Engpass hätte bestehen dürfen. Am stärksten
+  bemerkbar bei 100% Geschwindigkeit (höchster Treibstoffbedarf, kleinster Puffer). Alle Max-/Füll-
+  Buttons rechnen jetzt mit dem live aktuellen Bestand
+- Neu: Die Zielplaneten-Auswahl im Transport-Fenster ist jetzt ein eigenes Auswahlfenster (Knopf
+  "Zielplanet" → Fenster geht auf → Planet anklicken) statt eines Dropdown-Feldes mitten im Formular.
+  Das Auswahlfenster liegt technisch außerhalb der normalen Seitenansicht und wird deshalb vom
+  automatischen Neuaufbau der Seite (bei Ereignissen wie fertiggestellten Bauten anderswo im Imperium)
+  nicht mehr getroffen — es klappt nicht mehr von selbst zu und die Seite springt dabei auch nicht
+  mehr nach oben
+
+v0.50_38
+- Neu: Kolonisierte Planeten (außer Heimatwelt) können jetzt endgültig verlassen werden, um woanders neu
+  zu kolonisieren. Voraussetzung: ALLE Gebäude auf dem Planeten (inkl. Planetarer Schutzschirm) müssen
+  zuerst auf Stufe 0 zurückgebaut sein
+- Neu: Jedes Gebäude hat jetzt einen "🗑 Abreißen"-Button (im Bau-Tab bzw. beim Schutzschirm im
+  Verteidigungs-Tab) — baut die aktuell höchste Stufe um 1 zurück. Rückbauzeit = 50% der ursprünglichen
+  Bauzeit dieser Stufe, Rückerstattung = 50% der Baukosten dieser Stufe (wird direkt gutgeschrieben,
+  auch über das Lagerlimit hinaus). Nur ein Bau- ODER Rückbau-Vorgang gleichzeitig pro Planet
+- Sobald ein Planet komplett leergebaut ist, erscheint unten auf der Planeten-Seite die Karte
+  "🪐 Planet leergebaut" mit dem Button "🚪 Planet verlassen". Flotte, Verteidigung und ein eventueller
+  Mond auf diesem Planeten gehen dabei unwiederbringlich verloren, die Spezies/Bevölkerung bleibt
+  einfach zurück und ist danach weg — der Kolonie-Slot wird wieder frei. Der Button ist gesperrt,
+  solange noch eine Flotte von/zu diesem Planeten unterwegs ist (verhindert verwaiste Missionen)
+- Migration: Altspielstände bekommen automatisch das neue "demolition"-Feld pro Planet ergänzt
+
+v0.50_37
+- Bugfix: Beim Transport (📦 Transport & Flotte verlegen) hat der "📦 Frachtraum füllen"-Button Deuterium
+  bis zum kompletten Vorrat eingetragen, ohne den für den Flug selbst benötigten Treibstoff zu
+  reservieren (der einzelne "Max"-Button bei Deuterium selbst machte das schon richtig, seit v0.50_31,
+  nur "Frachtraum füllen" nicht) — dadurch scheiterte der Start je nach gewählten Ressourcen weiterhin
+  stillschweigend, obwohl auf dem Planeten genug Deuterium vorhanden war. "Frachtraum füllen" reserviert
+  den Treibstoffbedarf jetzt genauso wie der Max-Button
+
+v0.50_36
+- UI: Flotten-Seite — Schiffs- und Verteidigungs-Übersicht zeigen jetzt Bild-Kacheln (wie die
+  Werft-Kachel-Leiste) statt reiner Textliste, inklusive Bestand als Zahl direkt auf der Kachel
+- UI: Mond-Seite — alle nackten Emoji-Icons (Mondgebäude, Schiffs-/Verteidigungsbau, Warteschlange)
+  durch bild-bereite Icon-Boxen ersetzt, gleiches Fallback-Prinzip wie überall sonst
+- Vorbereitung: neue Bildpfade verdrahtet — bilder/mondgebaeude/<key>/<key>_1.png für Mondbasis/
+  Mondwerft/Sprungtor/DM-Generator; Schiffe &amp; Verteidigung auf dem Mond nutzen bereits die
+  bestehenden Werft-Bildpfade (bilder/schiffe/, bilder/verteidigung/)
+- Intern: generische Icon-Box-Komponente (iconBoxHtml) eingeführt, bisherige "market-item-img"-Klasse
+  in "icon-box" umbenannt, damit sie überall wiederverwendbar ist
+
+v0.50_35
+- UI: Markt-Seite optisch überarbeitet — Ressourcen-Auswahl-Chips (Von/Nach) zeigen jetzt zusätzlich
+  das Rohstoff-Icon, Schwarzmarkt-Artikel haben eine eigene Icon-Box statt nur einem Emoji-Zeichen
+- Vorbereitung: Bildpfade für Schwarzmarkt-Artikel sind bereits verdrahtet
+  (bilder/schwarzmarkt/<key>/<key>_1.png) — fällt automatisch aufs Icon zurück, solange die Bilddatei
+  fehlt, erscheint automatisch sobald sie ergänzt wird
+- Hinweis: Der Kurse/Tausch-Rechner bleibt bewusst als Formular (keine Hero-Karte + Kachel-Leiste wie
+  bei Forschung/Werft), da es dort kein "ein Artikel aktiv auswählen"-Konzept gibt
+
+v0.50_34
+- UI: Forschungs-Seite komplett neu gestaltet — jetzt im selben Hero-Karten-Stil wie Planet/Werft
+  (große Detailkarte mit Name, Stufe, Beschreibung, Kosten & "Erforschen"-Button, darunter eine
+  Kachel-Leiste zum Umschalten zwischen allen Technologien, gruppiert nach Wirtschaft/Kampf/Expansion)
+- Vorbereitung: Bildpfade für Technologien sind bereits verdrahtet (bilder/forschung/<key>/<key>_1.png)
+  — fällt automatisch und lautlos aufs Icon zurück, solange die Bilddatei fehlt; sobald Bilder ergänzt
+  werden, erscheinen sie ohne weitere Code-Änderung in der Kachel-Leiste
+
+v0.50_33
+- Umbau: Alle 8 Offiziere (die ursprünglichen 4 + die 4 Premium-Offiziere) sind jetzt zu EINEM
+  einheitlichen System zusammengeführt — nur noch mit 🌌 Dunkler Materie anheuerbar und zeitlich
+  befristet auf 7 Tage, danach läuft der Bonus ab und muss erneut angeheuert werden (wiederkehrender
+  DM-Sink). Keine Unterscheidung mehr zwischen "permanent gekauft mit Rohstoffen" und "befristet mit DM".
+- UI: Offiziere-Reiter und Offiziers-Lounge-Reiter zu einem einzigen "🎩 Offiziers-Lounge"-Reiter
+  zusammengelegt (neben Errungenschaften) — keine doppelte Ansicht mehr
+- Migration: bereits angeheuerte (alte, permanente) Offiziere aus bestehenden Spielständen werden
+  automatisch mit einer frischen 7-Tage-Laufzeit in die Lounge übernommen — kein Verlust
+- Bugfix: fehlerhafte Restreferenzen aus dem unvollständigen v0.50_32-Umbau behoben (undefinierte
+  "officers"-Variable beim Speichern/Laden/Reset, tote Verweise auf "PREMIUM_OFFICERS" und
+  "premiumOfficerActive"/"hirePremiumOfficer"), die zu Abstürzen beim Speichern und beim Klick auf
+  "Anheuern" in der Lounge geführt hätten
+
+v0.50_32
+- Neu: 🎩 Offiziers-Lounge — 4 zusätzliche Premium-Offiziere (Kommodore, Kanzlerin, Stratege, Schmuggler),
+  ausschließlich mit 🌌 Dunkler Materie anheuerbar. Anders als die 4 klassischen Offiziere sind diese
+  zeitlich befristet (7 Tage) und müssen danach erneut angeheuert werden — ein wiederkehrender DM-Sink.
+  Boni: Kommodore +20% Frachtraum, Kanzlerin +25% Dunkle-Materie-Förderung, Stratege +15%
+  Flottengeschwindigkeit, Schmuggler -10% Schwarzmarkt-Preise (mit sichtbarem durchgestrichenem
+  Originalpreis im Shop)
+- Neu: 7 zusätzliche Errungenschaften (Mondgeborener, Zwillingsmonde, Sternenkartograph, Ringwelt-Baron,
+  Anomalienjäger, Salon-Mitglied, Großmacht) — insgesamt jetzt 18 statt 11
+- UI: Offiziere, Offiziers-Lounge und Errungenschaften sind jetzt drei getrennte Reiter in der
+  Rangliste-Ansicht statt einer langen gemeinsamen Seite
+
+v0.50_31
+- Bugfix: Beim Transport (📦 Transport & Flotte verlegen) hat der "Max"-Button bei Deuterium bisher den
+  kompletten Vorrat eingetragen, ohne den für den Flug selbst benötigten Treibstoff zu berücksichtigen —
+  dadurch scheiterte der Start oft stillschweigend, weil zusätzlich zur Fracht ja noch Treibstoff auf dem
+  Planeten übrig sein muss. Der Treibstoffbedarf (abhängig von gewählten Schiffen, Ziel und Geschwindigkeit)
+  bleibt jetzt automatisch reserviert. Außerdem berücksichtigt "Max" jetzt bei ALLEN Ressourcen den noch
+  freien Frachtraum (unter Berücksichtigung bereits befüllter anderer Ressourcen), statt einfach den
+  gesamten Planetenvorrat einzutragen, auch wenn der gar nicht in die Schiffe passt
+
+v0.50_30
+- Bugfix: Zeitanzeigen (Bauzeiten, Flugzeiten, Cooldowns etc.) liefen bei allem über 60 Minuten als
+  reine M:SS-Anzeige (z.B. "120:00" bei 2 Stunden statt "2:00:00"). fmtTime() bricht Stunden jetzt
+  korrekt raus (Format H:MM:SS ab 1 Stunde, sonst wie gehabt M:SS) — betrifft alle 44 Stellen im Spiel,
+  die diese Funktion nutzen
+
+v0.50_29
+- Bugfix/UI: Der "Mond 2"-Reiter im Mondfenster war komplett unsichtbar, solange Astrophysik-Stufe 10 noch
+  nicht erreicht war — dadurch wirkte es wie ein Fehler, dass sich kein zweiter Mond erschaffen ließ, obwohl
+  es einfach nur an der fehlenden Voraussetzung lag. Der Reiter wird jetzt immer angezeigt (auch schon bei
+  Mond 1) und zeigt als gesperrter 🔒-Button direkt an, ab welcher Astrophysik-Stufe Mond 2 freigeschaltet wird
+
+v0.50_28
+- Neu: System-Anomalien (wie EVE-Online-Signaturen) — in jedem bereits gescannten System können jetzt
+  zufällig zeitlich begrenzte Signale auftauchen (max. 5 gleichzeitig pro System, echte 1 Stunde
+  Lebenszeit, unabhängig vom Spielspeed). Ein Signal zeigt zunächst nur "❔ Unbekanntes Signal" und muss
+  gegen etwas Deuterium gescannt werden, danach wird sichtbar, um welche der 61 Kategorien es sich
+  handelt. Drei Arten: ⚔️ Kampf-Anomalien (Flotte hinschicken, echte Schlacht mit Verlustrisiko wie bei
+  Piratennestern), ♻️ Beute-Anomalien (Bergungsschiffe hinschicken, kein Kampfrisiko, Fracht wird wie ein
+  Trümmerfeld eingesammelt) und 🌌 Sofort-Anomalien (Rohstoffe, Dunkle Materie oder Artefakt-Fragmente
+  per Klick einlösen, manche gegen eine kleine Deuterium-Gebühr). Belohnungen & Gegnerstärke skalieren
+  sanft mit dem eigenen Imperiums-Fortschritt. Anomalien erscheinen sowohl als Marker im Orbit-Diagramm
+  als auch als eigene Karten in den Galaxie-Details. Der Autopilot (🤖) kennt das neue System ebenfalls:
+  er scannt unbekannte Signale, greift Kampf-Anomalien nur bei ausreichender Erfolgschance an, schickt
+  Bergungsschiffe zu Beute-Anomalien und löst Sofort-Anomalien automatisch ein, sobald leistbar
+
+v0.50_27
+- Neu: Im Startbildschirm (Profilauswahl) gibt es jetzt unter "⚙️ Alle Profile sichern / übertragen"
+  einen Sammel-Export/-Import für ALLE Profile (Accounts) dieses Browsers auf einmal — praktisch, um
+  z.B. mehrere Bot-Accounts gesammelt in einer einzigen Datei auf ein anderes Gerät/Browser zu
+  übertragen, statt jedes Profil einzeln zu exportieren/importieren. Beim Import werden Profile mit
+  gleicher ID überschrieben, alle anderen bereits vorhandenen Profile bleiben unangetastet erhalten
+
+v0.50_26
+- Bugfix: Das Gebäude-Infofenster ("📘 Nächste 10 Stufen") sprang beim sekündlichen automatischen
+  Neurendern (Ressourcen-Tick) immer wieder an den Anfang zurück, sobald man darin nach unten
+  gescrollt hatte. Die Scroll-Position wird jetzt wie Eingabefelder und Dropdown-Auswahl über den
+  Re-Render hinweg gemerkt und wiederhergestellt
+
+v0.50_25
+- Neu: Zwei-Monde-Mechanik — jeder Planet kann jetzt bis zu 2 Monde gleichzeitig besitzen (Mond 1 + Mond 2)
+  statt nur einen. Der zweite Mond-Slot schaltet sich ab Astrophysik Stufe 10 frei (Hinweis dazu im
+  Forschungstext) und bildet sich danach seltener natürlich nach gewonnenen Schlachten als der erste,
+  kann aber auch künstlich (Ätherium) gebaut werden
+- Mondansicht hat jetzt oben einen Umschalter "🌕 Mond 1" / "🌗 Mond 2", um zwischen beiden Monden zu
+  wechseln (inkl. eigenem Gebäude-, Schiffs- und Verteidigungsbau sowie eigener Bauwarteschlange pro Mond)
+- Sprungtor kann jetzt auch zwischen den beiden Monden desselben Planeten sowie zu/von jedem Mond
+  anderer Planeten Flotten transferieren (Ziel wird als Planet+Mond-Slot ausgewählt)
+- Beide Monde tragen unabhängig zu Rohstoff-, Energie-, Lager-, Bautempo-, Verteidigungs- und
+  Forschungstempo-Boni sowie zur Dunkle-Materie-Förderung bei; ihre Boni stapeln sich
+- Orbitdiagramm (Systemkarte) sowie Planeten-Badges/-Übersicht zeigen jetzt beide Monde an, falls
+  vorhanden, statt nur den ersten
+- Bauplan-Sofortfertigstellung, Punkte-/Investitionsberechnung, Flottenzählung sowie Speicherstand-
+  Migration für Altspielstände unterstützen jetzt beide Mond-Slots
+- Zerstören eines Mondes wirkt jetzt gezielt auf den gerade ausgewählten Mond-Slot
+
+v0.50_24
+- Neu: Nanitenfabrik (⚙️) hinzugefügt — angelehnt ans OGame-Original. Voraussetzung: Robotikfabrik
+  Stufe 10 UND Computertechnik Stufe 10. Halbiert PRO STUFE zusätzlich zur Robotikfabrik die Bauzeit
+  von Gebäuden, Schiffen UND Verteidigung (Basiskosten 20.000 Metall / 8.000 Kristall / 4.000
+  Deuterium, ×2 pro Stufe). Wirkt nur auf dem Planeten, auf dem sie gebaut wurde (wie im Original,
+  auf Monden nicht baubar)
+
+v0.50_23
+- Standard-Profil (Hauptprofil, immer fest auf System 1 / Slot 4) heißt jetzt "AETHERIS" statt
+  "Profil 1". Bestehende Spielstände, die den alten Standardnamen noch nicht geändert haben, werden
+  beim nächsten Laden automatisch umbenannt
+
+v0.50_22
+- Profil-Label auf dem Startbildschirm vereinfacht: Emoji und Zusatztext "(eigener Spielstand)" entfernt,
+  heißt jetzt nur noch "Profil"
+
+v0.50_21
+- Logo auf Vorstart- ("Berühren zum Start") und Startbildschirm (Profilauswahl) um 50% vergrößert
+  (Pixel-Obergrenze 320→480px bzw. 380→570px; vw-Anteil dabei bewusst unter 100vw gehalten, damit
+  das Logo auf schmalen Handy-Bildschirmen nicht über den Rand hinausragt)
+
+v0.50_20
+- Bugfix: Der Dialog "Neues Profil anlegen" öffnete sich zwar, lag aber optisch UNTER dem Startbildschirm
+  (z-index-Konflikt: Startbildschirm z-index:100 vs. Dialog z-index:35) und war dadurch nicht klickbar —
+  Profil-Erstellung war im Ergebnis unmöglich. Dialog liegt jetzt mit z-index:150 sichtbar obenauf
+- Geschwindigkeits-Stufen umbenannt und um eine Extrem-Stufe erweitert: ⚡ Blitz-Uni (Extrem, 100x),
+  🚀 Speed-Uni (Standard, 24x), 🌠 Komet-Uni (Halb-Speed, 12x), 🌙 Ruhig-Uni (Viertel-Speed, 6x),
+  🐢 Echtzeit-Uni (1x)
+
+v0.50_19
+- Neu: Beim Anlegen eines neuen Profils ("+ Neues Profil anlegen") öffnet sich jetzt ein Dialog statt
+  eines einfachen Textfelds. Darin wählbar: Profilname, Universum-Geschwindigkeit sowie ob das neue
+  Profil ein "Autopilot-Account" werden soll
+- Jedes Profil speichert jetzt seine eigene Geschwindigkeit (profiles[].speed); SPEED_MULTIPLIER wird
+  beim Start anhand des aktiven Profils gesetzt, statt global fix zu sein
+- Autopilot-Freischaltung geändert: Nur noch Profile, die bei der Erstellung explizit als
+  "Autopilot-Account" markiert wurden, dürfen Autopilot sofort nutzen. Alle anderen neuen Profile
+  brauchen wie das Hauptprofil erst "Intergalaktisches Forschungsnetzwerk" Stufe 1. Ältere Nebenprofile
+  von vor diesem Feature verhalten sich weiterhin wie bisher (sofort nutzbar), damit sich für
+  bestehende Spielstände nichts ändert
+
+v0.50_18
+- 24x bleibt fix als aktueller Standard-Speed. Referenz-Kommentar für spätere langsamere Stufen
+  ergänzt (Halb-Speed 12, Viertel-Speed 6, Echtzeit 1) — zum Umschalten reicht später einfach
+  eine Zahl bei SPEED_MULTIPLIER zu ändern, der Rest folgt automatisch
+
+v0.50_17
+- Zeitfaktor (24x) überprüft und als dokumentierter Standardwert (SPEED_MULTIPLIER) festgeschrieben,
+  vorbereitet für spätere Geschwindigkeits-Modi (Speed-Uni/Halb-Speed/Echtzeit — dann genügt es,
+  diesen einen Wert zu ändern)
+- Bug behoben: Die angezeigte Metall-/Kristall-/Deuterium-Produktion ("+X /h" in der Bau-Detailansicht
+  und im "Nächste 10 Stufen"-Fenster) entsprach NICHT der tatsächlichen Produktion — es fehlten der
+  Basis-Sockel (+20 Metall/+10 Kristall), die aktuelle Energie-Effizienz sowie Lebensform-/Mond-/
+  Schwarzmarkt-Boni. Anzeige rechnet jetzt exakt wie die echte Tick-Produktion
+- Klargestellt (Kommentar im Code): Bau-/Forschungs-/Schiffs-/Flugzeiten sind bewusst NICHT an den
+  Geschwindigkeitsfaktor gekoppelt (kurze Arcade-Zeiten), nur Rohstoff-/Punkte-Produktion und die
+  Zufallschancen (Überfälle, Bauplan-Funde, Artefakte, Meteore usw.) skalieren mit SPEED_MULTIPLIER —
+  das war beim Durchsehen überall konsistent, bis auf die oben genannte Anzeige
+
+v0.50_16
+- "verfügbar" bei der Rohstoff-Anzeige im Transport-Bildschirm entfernt (nur noch Zahl in Klammern)
+
+v0.50_15
+- Bug behoben: Dunkle-Materie-Generator auf künstlichen Monden belegte zwar 1 Feld beim Bau,
+  zählte danach aber nicht als belegtes Feld mit — Feldberechnung jetzt korrekt
+- Flotten-Ansicht aufgeräumt: Schiffs-Icons vor den Namen entfernt (Übersicht + Transport-Liste),
+  überflüssige "verfügbar"/Fracht-pro-Schiff-Texte bei den Schiffen im Transport-Bildschirm entfernt
+  (nur noch Name + Anzahl zählt)
+- Je einen "Max"-Knopf pro Schiff und pro Rohstoff (Metall/Kristall/Deuterium/Ätherium) im
+  Transport-Bildschirm ergänzt — füllt das jeweilige Eingabefeld sofort auf den vollen verfügbaren
+  Wert, ohne die Zahl per Hand eintippen zu müssen
+
+v0.50_14
+- Bauplan-Sofortfertigstellung (📜) jetzt auch bei der Erschaffung eines künstlichen Mondes
+  selbst nutzbar (nicht nur bei Gebäuden/Werft/Verteidigung auf einem bereits existierenden Mond)
+
+v0.50_13
+- Bauplan-Sofortfertigstellung (📜) fehlte bisher komplett auf Monden — jetzt auch dort nutzbar:
+  Mondgebäude (Mondbasis/Mondwerft/Sprungtor), Mond-Werft-Warteschlange und Mond-Verteidigungsbau
+  zeigen jetzt wie auf Planeten den "Sofort fertigstellen"-Knopf während des Baus
+
+v0.50_12
+- Auswahl-Kacheln im Bau-Detailfenster (Gebäude/Schiffe/Verteidigung) nochmal vergrößert
+  (92px → 132px Mindestgröße) und fest auf maximal 3 Kacheln pro Reihe begrenzt
+  (statt automatischem Umbruch je nach Bildschirmbreite), Icon/Stufen-Schrift passend mitskaliert
+
+v0.50_11
+- Emoji-Icon vor dem Namen im Bau-Detailfenster (kompakte Kopfzeile) entfernt
+
+v0.50_10
+- Große Hintergrundfläche im Bau-Detailfenster deutlich verkleinert (kein großes Bildfeld mehr,
+  nur noch kompakte Zeile mit Name/Stufe), Buch-Info-Button wandert mit in diese Zeile (rechts),
+  Auswahl-Kacheln darunter dafür spürbar größer (58px → 92px Mindestgröße)
+
+v0.50_09
+- Gebäude-/Schiffs-/Verteidigungs-Detailansicht: Fotos aus dem großen oberen Fenster entfernt
+  (nur noch großes Emoji-Icon halbtransparent im Hintergrund), stattdessen dienen die Bilder
+  jetzt als Hintergrund der kleinen Auswahl-Kacheln darunter, mit nur noch Stufe/Anzahl als
+  Zahl obendrauf (Schiffs-Kacheln zeigen jetzt erstmals auch die Stückzahl)
+
+v0.50_08
+- Dunkle Materie und Ätherium aus dem Ressourcen-Fenster raus, stattdessen in die kompakte
+  Kachel-Reihe im Header verschoben (Reihenfolge: Energie → Dunkle Materie → Ätherium),
+  Kachel-Reihe bricht bei 6 Einträgen automatisch in 2 Zeilen um
+
+v0.50_07
+- Ressourcen-Fenster überarbeitet: Header zeigt nur noch eine kompakte, klickbare Kachel-Reihe
+  (Metall/Kristall/Deuterium/Energie), Klick öffnet Detail-Fenster mit vollen Zahlen,
+  Lagerbestand+Balken bei Ressourcen und Verbrauch bei Energie wieder da (2-Kachel-Layout)
+
+v0.50_06
+- Kompakte Kurzform-Anzeige (fmtShort) für Header-Zahlen eingeführt (z. B. 999,99k → 1,00 Mio),
+  nur im Header verwendet, Baukosten etc. zeigen weiterhin volle Zahlen
+
+v0.50_05
+- Ressourcen-Fenster als eigenes Overlay/Modal ausgelagert (📊-Button), dadurch mehr Platz:
+  größere Icons/Zahlen möglich ohne den Haupt-Header zu sprengen
+
+v0.50_04
+- Metall/Kristall/Deuterium-Zeile im Header zentriert statt linksbündig; Header-Icons von 13px
+  auf 20px vergrößert
+
+v0.50_03
+- Energie-Verbrauchsanzeige ("/ X") aus dem Header entfernt, analog zum Lagerbestand
+
+v0.50_02
+- Lagerbestand (Kapazität + Balken) aus dem Header-Ressourcenanzeige entfernt (nur noch
+  aktueller Wert), untere Navigation und Mehr-Menü-Icons mehrfach nachjustiert (18→22→32px
+  bzw. 18→26→44px), Handelsposten-Bildpfad ergänzt
+
+v0.50_01
+- v0.50 Bildpfad-Rundschluss: Header-Icons (Energie/Lebensform/LFF/Dunkle Materie/Bevölkerung),
+  Ressourcen-Icons, untere Navigation, Mehr-Menü-Icons, Mond-Tab (wiederverwendet aus
+  Monde-Reihe), v0.50-Versionsanzeige auf Vorstart-/Start-Seite ergänzt
+
+v0.50
+- Verteidigungs-Detailansicht (Schild + Verteidigungsanlagen): fehlenden Klick-Handler für
+  die Auswahl-Kacheln (.defense-thumb) ergänzt, CSS-Hover/Active-Zustand erweitert
+- Bildpfade mit Emoji-Fallback ergänzt für: Gebäude, Schiffe, Verteidigung, Ressourcen
+  (Metall/Kristall/Deuterium/Ätherium), Header-Icons (Energie/Lebensform/LFF/Dunkle Materie/
+  Bevölkerung), untere Navigation (Übersicht/Planet/Werft/Flotte) und Mehr-Menü
+  (Galaxie/Lebensformen/Forschung/Markt/Offiziers Lounge/Berichte/Archiv/Einstellungen)
+- "Rang"-Tab zu "Offiziers Lounge" umbenannt (🎖️ statt 🏆); fake "Galaktische Rangliste"
+  (generierte KI-Gegner) entfernt — Imperiumspunkte, Offiziere und Errungenschaften bleiben
+- Mond-Tab im Mehr-Menü nutzt jetzt bilder/monde/natuerlich/natuerlich_1.png (kein neues Bild nötig)
+
+============================================================
+-->
+<!--
+============================================================
+ DYSON-SPHÄRE — TODO (Endgame-Feature)
+ Kleine, einzeln abhakbare Schritte. Reihenfolge = empfohlene Bau-Reihenfolge,
+ jeder Schritt ist für sich testbar, bevor der nächste angefangen wird.
+============================================================
+
+## Phase 1 — Datenmodell & Grundgerüst
+- [x] Neues Array `DYSON_PARTS` anlegen (5 Bauteile: Trägerstruktur, Kollektorzelle,
+      Steuerkern, Kühlsystem, Panzerung) mit `key`, `name`, `requiredType`, `cost`,
+      `buildTime`, `icon` — nach dem Muster der bestehenden Gebäude-/Schiffs-Arrays
+- [x] Forschung "Sphärentechnik" anlegen (Kategorie wie Expeditionstechnik),
+      schaltet die Dyson-Kette grundsätzlich frei
+- [x] Neuer Speicher-Bereich pro Profil: `dysonState` (panelsBuilt, panelsInTransit,
+      resourcesReady, returnArrival) — Struktur festlegen, noch ohne UI
+
+## Phase 2 — Bauteile produzieren
+- [x] `canBuildDysonPart(part, planet)`-Check: Bauteil nur baubar, wenn
+      `planetType(slot,sys).key === part.requiredType`
+- [x] Bauteile in die normale Werft-Queue des jeweiligen Planeten einhängen
+      (gleiche Queue-Logik wie Schiffe, nur neuer Item-Typ)
+- [x] UI: Bauteil-Auswahl in der Werft nur anzeigen, wenn Planetentyp passt +
+      Sphärentechnik erforscht
+
+## Phase 3 — Mond-Montage
+- [x] Neuer Bau-Slot "Panel montieren" in der Mond-Werft (nur künstliche Monde)
+- [x] Montage verbraucht je 1 Satz der 5 Bauteile → erzeugt 1 fertiges Panel
+- [x] Fracht-Transport Planet → Mond nutzt bestehende Flottenlogik (kein neuer
+      Missionstyp nötig, ist ja schon "normaler" Transport)
+
+## Phase 4 — Flug zur Sonne
+- [x] Neue Missionsart "Dyson-Ausbau" im bestehenden Flottensystem (eigenes Icon/
+      Label "🔆", sonst gleiche Datenstruktur wie andere Missionen)
+- [x] Taucht automatisch in der normalen Flotten-Übersicht mit Countdown auf
+- [x] Bei Ankunft: `panelsBuilt` erhöhen, Panel-Fracht verbrauchen
+
+## Phase 5 — Externe 3D-Ansicht
+- [x] `dysonsphere.html` als eigene Datei anlegen, liest `dysonState` aus
+      `localStorage` (gleiche Origin wie Hauptspiel)
+- [x] Öffnet sich als neuer Tab (`window.open`), Hauptspiel-Tab bleibt unverändert
+      an der Kartenposition stehen
+- [x] Three.js-Szene: nur tatsächlich gebaute Panele sichtbar (kein Platzhalter),
+      Fibonacci-Sphären-Verteilung, sanfte Eintritts-Animation bei neuen Panelen
+- [x] `storage`-Event-Listener: aktualisiert Ansicht live, wenn Hauptspiel-Tab
+      zwischenzeitlich neue Panele meldet
+
+## Phase 6 — Ressourcensynthese
+- [x] Neue Ressource "Sternenenergie" (oder ähnlich), kein Lagerlimit wie Ätherium
+- [x] Ertrag skaliert mit `panelsBuilt / TOTAL` (mehr Ausbau = mehr Ertrag)
+- [x] Sammel-Mechanik auf der externen Seite, füllt `resourcesReady`
+
+## Phase 7 — Echter Rückversand
+- [x] Button "Ladung zur Heimatwelt schicken" setzt `returnArrival = now + reisezeit`
+      (Formel analog zu normalen Flügen, keine Sofort-Gutschrift)
+- [x] Rückflug erscheint ebenfalls in der normalen Flotten-Übersicht des Hauptspiels
+- [x] Bei Ankunft (Hauptspiel ODER externe Seite, wer zuerst lädt): Gutschrift
+      von `resourcesReady`, danach zurücksetzen — gleiches Muster wie
+      Expeditions-Offline-Hochrechnung
+
+## Phase 8 — Balancing-Durchgang
+- [x] Kosten/Bauzeiten der 5 Bauteile so einstellen, dass Gesamtprojekt ein
+      echtes Endgame-Ziel ist (mehrere Wochen/Monate, nicht Tage)
+- [x] TOTAL-Panelzahl für "fertige" Sphäre final festlegen (1.000 Panele,
+      siehe `DYSON_SPHERE_TOTAL_PANELS` in dysonsphere.html)
+- [x] Flug zur Sonne/Rückversand: eigene `dysonTravelSeconds`/`dysonFuelCost`-
+      Formel statt zweckentfremdeter Angriffsflug-Formel (Zielsystem = eigenes
+      System ergab vorher eine quasi bedeutungslose Distanz von 1)
+
+## Phase 9 — Später (eigenes Kapitel, nicht Teil der Sphäre selbst)
+- [ ] Screaming-Sun-Expeditionslinie, freigeschaltet ab Sphären-Fertigstellung
+- 🤖 KI-Imperien (simuliertes Wachstum, Offline-Hochrechnung, Galaxie-Sichtbarkeit) — eigene
+  Unterschritte, analog zur Dyson-Sphäre einzeln testbar:
+  - [x] Datenmodell: `AI_EMPIRE_NAMES`-Pool + deterministische Generierung (`buildAiEmpire`,
+        `aiEmpireStats`) — feste, geräteübergreifend identische Werte ohne Speicherbedarf
+  - [x] Deterministische Heimatkoordinaten (`aiEmpireHomeCoords`/`aiEmpireOccupancy`), Priorität
+        NACH echten Profilen aber VOR der "Unbekanntes Imperium"-Verknappungsfüllung
+  - [x] Offline-Hochrechnung: fixer Real-Zeit-Bezugspunkt `AI_EMPIRE_EPOCH` statt Profilstart,
+        Wachstum flacht mit Wurzel(Stunden) ab statt linear zu explodieren
+  - [x] Galaxie-Sichtbarkeit: eigene Zeile/Ring-Farbe (🤖, bläulich) in Galaxie-Liste +
+        Orbit-Diagramm zeigt Name, Punkte, geschätzte Kolonienzahl statt nur einer Namens-Marke
+  - [x] Altes rivals/gameStartTime-Fake-Rangliste-Paar entfernt, Spionage-Gegenmaßnahme-Flavor
+        (`AI_EMPIRE_NAMES`) nutzt jetzt denselben, echten Namenspool wie die sichtbaren Imperien
+  - [ ] Detail-Popup bei Klick auf ein KI-Imperium (Kurzinfo: seit wann aktiv, Wachstumstrend)
+  - [ ] Balancing: Anzahl/Wachstumsraten im laufenden Spielgefühl nachjustieren
+-->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AETHERIS — Echoes of an Eternal Empire</title>
 <style>
-  @import url('fonts/fonts.css');
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   * { box-sizing: border-box; }
   body {
     margin: 0; min-height: 100vh;
@@ -786,7 +2456,7 @@
     <canvas class="warp-canvas" id="warpGate"></canvas>
     <div class="game-logo" id="logoGate"></div>
     <div class="tap-hint" id="startGateBtn">Berühren zum Start</div>
-    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.25</div>
+    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.24</div>
   </div>
 
   <div class="title-screen hidden" id="titleScreen">
@@ -803,7 +2473,7 @@
       <button class="menu-btn" id="titleMusicBtn" style="font-size:11px;width:100%">🎵 Musik</button>
       <input type="range" class="music-volume-input" id="titleMusicVolume" min="0" max="1" step="0.05" style="width:130px;margin-top:8px;accent-color:#D4AF37;display:block">
     </div>
-    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.25</div>
+    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.24</div>
   </div>
   <div class="header">
     <div class="title-row">
@@ -946,6 +2616,12 @@
         <button class="menu-btn danger" id="deleteProfileBtn" style="font-size:11px;margin-top:6px;width:100%;display:none">Profil unwiderruflich löschen</button>
         <div id="deleteProfileHint" style="display:none;font-size:9.5px;color:#8A7A6A;margin-top:4px;line-height:1.4">Löscht Spielstand, Flotten, Offiziere, Erfolge und Statistiken dieses Profils dauerhaft.</div>
         <button class="menu-btn danger" id="bulkDeleteProfilesBtn" style="font-size:11px;margin-top:10px;width:100%">Mehrere Profile auswählen &amp; löschen…</button>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(212,175,55,0.15)">
+          <div style="font-size:10px;color:#8A7A6A;margin-bottom:6px">Testumgebung</div>
+          <button class="menu-btn" id="createDevProfileBtn" style="font-size:11px;width:100%">Dev-Universum erstellen (10.000x, Sofort-Bau, volle Lager)</button>
+          <button class="menu-btn danger" id="deleteDevProfileBtn" style="font-size:11px;margin-top:6px;width:100%;display:none">Dev-Universum löschen</button>
+          <div style="font-size:9.5px;color:#8A7A6A;margin-top:4px;line-height:1.4">Legt ein eigenes Test-Profil an: 10.000x Geschwindigkeit, nahezu sofortige Bau-/Forschungs-/Schiffszeiten und stets aufgefüllte Rohstoffe & Dunkle Materie. Über den Löschen-Button jederzeit rückstandslos entfernbar.</div>
+        </div>
       </div>
       <button class="reset-btn" id="profileManageModalCloseBtn">Schließen</button>
     </div>
@@ -1043,6 +2719,10 @@
 // attackTravelSeconds). Alle Produktionsformeln UND ihre Anzeige (buildingProdLine/
 // planetEnergyEffForDisplay) hängen einzig an diesem einen Wert.
 let SPEED_MULTIPLIER = 24; // STANDARD-Spielgeschwindigkeit (24x) — Fallback, bis das aktive Profil geladen ist
+// 🧪 Dev-Profil-Flag: true, wenn das aktive Profil als Testumgebung angelegt wurde (siehe createDevProfileBtn).
+// Wirkt zusätzlich zu SPEED_MULTIPLIER auch auf Bau-/Forschungs-/Schiffszeiten (die sonst geschwindigkeitsunabhängig
+// sind) und sorgt dafür, dass Rohstoffe & Dunkle Materie beim Spielstart stets aufgefüllt werden (siehe applyDevBoostIfNeeded).
+let IS_DEV_PROFILE = false; // Fallback, bis das aktive Profil geladen ist (siehe unten bei activeProfileId)
 
 
 const SYSTEM_NAMES = [
@@ -2956,7 +4636,10 @@ const robotBuildTimeMult = (lvl) => 1 / (1 + (lvl||0)*0.5);
 // Nanitenfabrik (siehe BUILDINGS "naniteFactory"): halbiert die Bauzeit von Gebäuden, Schiffen UND
 // Verteidigung PRO STUFE (0.5^Stufe) — wirkt zusätzlich zur Robotikfabrik, genau wie im Vorbild OGame.
 const naniteBuildTimeMult = (lvl) => Math.pow(0.5, lvl||0);
-const buildSeconds = (c, robLevel, naniteLevel) => Math.max(3, Math.round((c.metal+c.crystal)/40 * timeTechMult() * officerBuildTimeMult() * robotBuildTimeMult(robLevel) * naniteBuildTimeMult(naniteLevel)));
+// 🧪 Dev-Profil: teilt Bau-/Forschungs-/Schiffszeiten zusätzlich durch diesen Faktor (Sofort-Bau zum Testen),
+// unabhängig von SPEED_MULTIPLIER (der laut Design NUR die Produktion/Punkte, nicht die Bauzeiten beeinflusst).
+const devTimeDiv = () => IS_DEV_PROFILE ? 30 : 1;
+const buildSeconds = (c, robLevel, naniteLevel) => Math.max(IS_DEV_PROFILE ? 1 : 3, Math.round((c.metal+c.crystal)/40 * timeTechMult() * officerBuildTimeMult() * robotBuildTimeMult(robLevel) * naniteBuildTimeMult(naniteLevel) / devTimeDiv()));
 const fmt = (n) => Math.floor(n).toLocaleString('de-DE');
 // Kompakte Kurzform für den Header (999,99k → nächster Tick 1,00 Mio), damit lange Zahlen das Layout nicht sprengen.
 const fmtShort = (n) => {
@@ -3296,9 +4979,9 @@ const researchCost = (r, lvl) => ({
   crystal: Math.floor(r.baseCost.crystal*Math.pow(r.costFactor, lvl)),
   deuterium: Math.floor(r.baseCost.deuterium*Math.pow(r.costFactor, lvl)),
 });
-const researchSeconds = (c, labLevel) => Math.max(5, Math.round((c.metal+c.crystal+c.deuterium*1.5)/(50*(1+labLevel*0.5)) * timeTechMult() * officerResearchTimeMult()));
+const researchSeconds = (c, labLevel) => Math.max(IS_DEV_PROFILE ? 1 : 5, Math.round((c.metal+c.crystal+c.deuterium*1.5)/(50*(1+labLevel*0.5)) * timeTechMult() * officerResearchTimeMult() / devTimeDiv()));
 
-const shipBuildSeconds = (ship, count, yardLevel, hostPlanet) => Math.max(3, Math.round(ship.seconds*count / (1+yardLevel*0.2) * timeTechMult() * officerBuildTimeMult() * lifeformShipBuildTimeMult(hostPlanet) * naniteBuildTimeMult(hostPlanet && hostPlanet.levels ? hostPlanet.levels.naniteFactory : 0)));
+const shipBuildSeconds = (ship, count, yardLevel, hostPlanet) => Math.max(IS_DEV_PROFILE ? 1 : 3, Math.round(ship.seconds*count / (1+yardLevel*0.2) * timeTechMult() * officerBuildTimeMult() * lifeformShipBuildTimeMult(hostPlanet) * naniteBuildTimeMult(hostPlanet && hostPlanet.levels ? hostPlanet.levels.naniteFactory : 0) / devTimeDiv()));
 
 /* Werft-Kapazität: wie viele Bau-Aufträge gleichzeitig laufen können.
    Stufe 0–7: 1 · Stufe 8–15: 2 · Stufe 16–23: 3 · ab Stufe 24: 4 (Deckel) */
@@ -4727,6 +6410,7 @@ let CURRENT_SAVE_KEY = saveKeyForProfile(activeProfileId);
 {
   const activeProfileObj = loadProfiles().find(p => p.id === activeProfileId);
   if (activeProfileObj && activeProfileObj.speed) SPEED_MULTIPLIER = activeProfileObj.speed;
+  IS_DEV_PROFILE = !!(activeProfileObj && activeProfileObj.dev);
 }
 
 /* ---------- Fremde Planeten (Multi-Profil-Galaxie, read-only) ----------
@@ -5193,6 +6877,25 @@ function loadGame() {
   } catch(e) { /* beschädigter Spielstand — mit Neustart weitermachen */ spawnPirates(); }
 }
 
+// 🧪 Dev-Profil: füllt Rohstoffe & Dunkle Materie beim Spielstart auf einen hohen Sockelwert auf
+// (nur AUFFÜLLEN per Math.max, nichts wird abgezogen — bereits höhere Bestände bleiben unangetastet).
+// Wird bei jedem beginGame() erneut aufgerufen, damit man auch nach dem Verbauen/Verbrauchen beim
+// nächsten Laden wieder voll ausgestattet ist.
+const DEV_RESOURCE_FLOOR = 50000000;   // 50 Mio Metall/Kristall/Deuterium je Planet
+const DEV_AETHERIUM_FLOOR = 5000000;   // 5 Mio Ätherium je Planet
+const DEV_DARK_MATTER_FLOOR = 500000;  // 500k Dunkle Materie (imperiumsweit)
+function applyDevBoostIfNeeded() {
+  if (!IS_DEV_PROFILE) return;
+  Object.values(planets).forEach(p => {
+    if (!p.resources) return;
+    p.resources.metal = Math.max(p.resources.metal || 0, DEV_RESOURCE_FLOOR);
+    p.resources.crystal = Math.max(p.resources.crystal || 0, DEV_RESOURCE_FLOOR);
+    p.resources.deuterium = Math.max(p.resources.deuterium || 0, DEV_RESOURCE_FLOOR);
+    if (p.resources.aetherium !== undefined) p.resources.aetherium = Math.max(p.resources.aetherium || 0, DEV_AETHERIUM_FLOOR);
+  });
+  darkMatter = Math.max(darkMatter || 0, DEV_DARK_MATTER_FLOOR);
+}
+
 function resetGame() {
   showConfirmDialog({
     icon: "🗑",
@@ -5564,7 +7267,7 @@ function canBuildDysonPart(part, planet) {
 
 // Gleiche Formel wie shipBuildSeconds, nur mit part.buildTime statt ship.seconds als Basis und einem
 // höheren Mindestwert (60s statt 3s) — die Bauteile sind bewusst schwergewichtige Endgame-Objekte.
-const dysonPartBuildSeconds = (part, count, yardLevel, hostPlanet) => Math.max(60, Math.round(part.buildTime*count / (1+yardLevel*0.2) * timeTechMult() * officerBuildTimeMult() * lifeformShipBuildTimeMult(hostPlanet) * naniteBuildTimeMult(hostPlanet && hostPlanet.levels ? hostPlanet.levels.naniteFactory : 0)));
+const dysonPartBuildSeconds = (part, count, yardLevel, hostPlanet) => Math.max(60, Math.round(part.buildTime*count / (1+yardLevel*0.2) * timeTechMult() * officerBuildTimeMult() * lifeformShipBuildTimeMult(hostPlanet) * naniteBuildTimeMult(hostPlanet && hostPlanet.levels ? hostPlanet.levels.naniteFactory : 0) / devTimeDiv()));
 
 // Reiht ein Dyson-Bauteil in die normale Werft-Queue des Planeten ein (gleicher Mechanismus wie
 // startShipBuild) — immer genau 1 Stück pro Bestellung, da die Bauteile ohnehin Endgame-Stückkosten
@@ -5784,7 +7487,7 @@ const DYSON_PANEL_BASE_ASSEMBLY_SECONDS = 3600; // [Phase 16 Balancing] 9h→1h/
 // beabsichtigten "Wochen-/Monate"-Projekts (siehe Kommentar oben bei DYSON_SPHERE_TOTAL_PANELS). 1h/Panel
 // ergibt eine Mindest-Bauzeit von ~42 Tagen (6 Wochen), Rohstoffbedarf bleibt der eigentliche Flaschenhals.
 function dysonPanelAssemblySeconds(count, yardLevel, hostPlanet) {
-  return Math.max(60, Math.round(DYSON_PANEL_BASE_ASSEMBLY_SECONDS*count / (1+(yardLevel||0)*0.2) * timeTechMult() * officerBuildTimeMult() * lifeformShipBuildTimeMult(hostPlanet) * naniteBuildTimeMult(hostPlanet && hostPlanet.levels ? hostPlanet.levels.naniteFactory : 0)));
+  return Math.max(60, Math.round(DYSON_PANEL_BASE_ASSEMBLY_SECONDS*count / (1+(yardLevel||0)*0.2) * timeTechMult() * officerBuildTimeMult() * lifeformShipBuildTimeMult(hostPlanet) * naniteBuildTimeMult(hostPlanet && hostPlanet.levels ? hostPlanet.levels.naniteFactory : 0) / devTimeDiv()));
 }
 // Wie viele vollständige 5er-Sets (je 1 Bauteil pro Typ) aktuell auf dem Mond zur Montage bereitstehen
 function maxAssemblableDysonSets(moon) {
@@ -5879,7 +7582,7 @@ function canAssembleSonnenwerftPanel() {
   return (research.sphereTech || 0) >= 1;
 }
 function sonnenwerftPanelAssemblySeconds(count) {
-  return Math.max(60, Math.round(DYSON_PANEL_BASE_ASSEMBLY_SECONDS * count * timeTechMult()));
+  return Math.max(60, Math.round(DYSON_PANEL_BASE_ASSEMBLY_SECONDS * count * timeTechMult() / devTimeDiv()));
 }
 function startSonnenwerftPanelAssembly(count) {
   if (dysonInstallations.panelQueue) return false;
@@ -5967,9 +7670,9 @@ function launchDysonPartsShipment(planet, fleetCounts, dysonCargo) {
 const DYSON_COLLECTOR_MAX_LEVEL = 10;
 const DYSON_CONVERTER_MAX_LEVEL = 10;
 function dysonCollectorUpgradeCost(toLevel) { return Math.round(7000 * Math.pow(1.55, toLevel-1)); }
-function dysonCollectorUpgradeSeconds(toLevel) { return Math.round(25200 * Math.pow(1.22, toLevel-1)); }
+function dysonCollectorUpgradeSeconds(toLevel) { return Math.round(25200 * Math.pow(1.22, toLevel-1) / devTimeDiv()); }
 function dysonConverterUpgradeCost(toLevel) { return Math.round(8000 * Math.pow(1.55, toLevel-1)); }
-function dysonConverterUpgradeSeconds(toLevel) { return Math.round(25200 * Math.pow(1.22, toLevel-1)); }
+function dysonConverterUpgradeSeconds(toLevel) { return Math.round(25200 * Math.pow(1.22, toLevel-1) / devTimeDiv()); }
 // Umtauschkurs Wandler-Kern: 1 Sternenenergie ergibt JEWEILS (5+Stufe)/3 Metall UND Kristall UND
 // Deuterium (gleichmäßig verteilter Gesamtwert von 5+Stufe pro eingesetzter Einheit Sternenenergie).
 function dysonConverterRatePerUnit(level) { return (5 + Math.max(1, level)) / 3; }
@@ -6064,7 +7767,7 @@ function startForgeBuild() {
   if (starEnergy < DYSON_FORGE_BUILD_COST) return false;
   starEnergy -= DYSON_FORGE_BUILD_COST;
   const t = Date.now();
-  dysonInstallations.forgeQueue = { startTime:t, endTime:t + DYSON_FORGE_BUILD_SECONDS*1000, cost:DYSON_FORGE_BUILD_COST };
+  dysonInstallations.forgeQueue = { startTime:t, endTime:t + DYSON_FORGE_BUILD_SECONDS*1000 / devTimeDiv(), cost:DYSON_FORGE_BUILD_COST };
   return true;
 }
 function cancelForgeBuild() {
@@ -6081,7 +7784,7 @@ function startForgeShipUnlock() {
   if (starEnergy < DYSON_FORGE_SHIP_UNLOCK_COST) return false;
   starEnergy -= DYSON_FORGE_SHIP_UNLOCK_COST;
   const t = Date.now();
-  dysonInstallations.forgeShipQueue = { startTime:t, endTime:t + DYSON_FORGE_SHIP_UNLOCK_SECONDS*1000, cost:DYSON_FORGE_SHIP_UNLOCK_COST };
+  dysonInstallations.forgeShipQueue = { startTime:t, endTime:t + DYSON_FORGE_SHIP_UNLOCK_SECONDS*1000 / devTimeDiv(), cost:DYSON_FORGE_SHIP_UNLOCK_COST };
   return true;
 }
 function cancelForgeShipUnlock() {
@@ -6098,7 +7801,7 @@ function startForgeDefenseUnlock() {
   if (starEnergy < DYSON_FORGE_DEFENSE_UNLOCK_COST) return false;
   starEnergy -= DYSON_FORGE_DEFENSE_UNLOCK_COST;
   const t = Date.now();
-  dysonInstallations.forgeDefenseQueue = { startTime:t, endTime:t + DYSON_FORGE_DEFENSE_UNLOCK_SECONDS*1000, cost:DYSON_FORGE_DEFENSE_UNLOCK_COST };
+  dysonInstallations.forgeDefenseQueue = { startTime:t, endTime:t + DYSON_FORGE_DEFENSE_UNLOCK_SECONDS*1000 / devTimeDiv(), cost:DYSON_FORGE_DEFENSE_UNLOCK_COST };
   return true;
 }
 function cancelForgeDefenseUnlock() {
@@ -6738,6 +8441,26 @@ function switchToMoon(id, slot) {
 /* ---------- Simulationsschritt ---------- */
 
 function tick() {
+  // 🐛 DEBUG (temporär): globaler Vorher-Schnappschuss ALLER Planeten-Ressourcen, um Resets
+  // durch IRGENDEINEN Teil von tick() zu fangen, nicht nur die Produktionsformel weiter unten.
+  const __dbgTickBefore = {};
+  Object.values(planets).forEach(pp => { __dbgTickBefore[pp.id] = { metal: pp.resources.metal, crystal: pp.resources.crystal, deuterium: pp.resources.deuterium, cap: { metal: storageCap(pp.levels.metalStorage, pp), crystal: storageCap(pp.levels.crystalStorage, pp), deuterium: storageCap(pp.levels.deutTank, pp) } }; });
+
+  const __dbgTargetId = "23-3"; // Algol III
+  const __dbgCheckpoints = [];
+  const __dbgCP = (label) => {
+    const pp = planets[__dbgTargetId];
+    if (!pp) return;
+    __dbgCheckpoints.push({ label, metal: pp.resources.metal, crystal: pp.resources.crystal, deuterium: pp.resources.deuterium });
+  };
+  __dbgCP("START");
+  // 🐛 DEBUG (temporär): Sanity-Check auf doppelte Mission-IDs (könnte doppelte Verarbeitung erklären)
+  {
+    const __dbgIds = missions.map(m => m.id);
+    const __dbgDupes = __dbgIds.filter((id, i) => __dbgIds.indexOf(id) !== i);
+    if (__dbgDupes.length) console.error("🐛 DOPPELTE MISSION-IDs GEFUNDEN:", __dbgDupes, missions.filter(m => __dbgDupes.includes(m.id)));
+  }
+
   const t = Date.now();
   const dtHours = (t - lastTickGlobal) / 1000 / 3600;
   lastTickGlobal = t;
@@ -6937,11 +8660,34 @@ function tick() {
     const crystalHr = (10 + mineOutput(20, p.levels.crystalMine) * eff) * p.mult.crystal * miningTechMult() * officerMiningMult() * lifeformMineProdMult(p) * moonResourceProdMult(p) * blackMarketBoostMult("crystal") * ringRepairProdMult(p);
     const deutHr = (mineOutput(10, p.levels.deutSynth) * eff) * p.mult.deuterium * miningTechMult() * officerMiningMult() * lifeformDeutProdMult(p) * moonResourceProdMult(p) * blackMarketBoostMult("deuterium") * ringRepairProdMult(p);
 
+    // 🐛 DEBUG (temporär): Schnappschuss VOR der Produktionsformel, um zu sehen ob/wo Ressourcen
+    // nach einer Überfüllung wieder auf storageCap runtergesetzt werden. Kann nach dem Isolieren
+    // des Bugs wieder entfernt werden (kompletten DEBUG-Block löschen).
+    window.__aetherisDebugOverflow = window.__aetherisDebugOverflow || {};
+    const __dbgCapM = storageCap(p.levels.metalStorage, p), __dbgCapC = storageCap(p.levels.crystalStorage, p), __dbgCapD = storageCap(p.levels.deutTank, p);
+    const __dbgBefore = { metal: p.resources.metal, crystal: p.resources.crystal, deuterium: p.resources.deuterium };
+    const __dbgWasOverflowing = __dbgBefore.metal > __dbgCapM || __dbgBefore.crystal > __dbgCapC || __dbgBefore.deuterium > __dbgCapD;
+
     // Produktion füllt nur bis zum Cap auf, senkt aber niemals bereits übervolle (overflowte) Lager wieder ab
     p.resources.metal = Math.max(p.resources.metal, Math.min(storageCap(p.levels.metalStorage, p), p.resources.metal + metalHr*dtHours*SPEED_MULTIPLIER));
     p.resources.crystal = Math.max(p.resources.crystal, Math.min(storageCap(p.levels.crystalStorage, p), p.resources.crystal + crystalHr*dtHours*SPEED_MULTIPLIER));
     p.resources.deuterium = Math.max(p.resources.deuterium, Math.min(storageCap(p.levels.deutTank, p), p.resources.deuterium + deutHr*dtHours*SPEED_MULTIPLIER));
     p.resources.deuterium = Math.max(0, p.resources.deuterium - fusionFuelConsumed);
+
+    // 🐛 DEBUG (temporär): war überfüllt, ist es nach dieser Formel nicht mehr (und keine Konsum-Erklärung
+    // wie Fusionskraftwerk-Treibstoff greift) -> hier wird tatsächlich etwas runtergesetzt, laut ausgeben.
+    if (__dbgWasOverflowing) {
+      const drop = {
+        metal: __dbgBefore.metal - p.resources.metal,
+        crystal: __dbgBefore.crystal - p.resources.crystal,
+        deuterium: __dbgBefore.deuterium - p.resources.deuterium - fusionFuelConsumed, // Treibstoffverbrauch rausrechnen
+      };
+      if (drop.metal > 0.01 || drop.crystal > 0.01 || drop.deuterium > 0.01) {
+        console.warn("🐛 OVERFLOW-RESET in tick()/Produktionsformel!", { planet: p.name, id: p.id, before: __dbgBefore, after: { ...p.resources }, caps: { metal: __dbgCapM, crystal: __dbgCapC, deuterium: __dbgCapD }, drop, time: new Date().toISOString() });
+      } else {
+        // (bereits verifiziert: Produktionsformel selbst ist korrekt - kein Log mehr nötig, s. Checkpoint-Kette unten)
+      }
+    }
 
     // Ätherium — nur auf Ringwelten, kein Energieverbrauch, kein Lagerlimit (sammelt sich unbegrenzt an)
     if (p.typeKey === "ringwelt" && p.levels.aetheriumExtraktor > 0) {
@@ -7028,6 +8774,7 @@ function tick() {
       }
     }
   });
+  __dbgCP("nach Planeten-forEach (Produktion/Piraten-Aufbau/Events)");
   if (pendingRaids.length) {
     const due = pendingRaids.filter(pr => t >= pr.resolveAt);
     if (due.length) {
@@ -7048,6 +8795,7 @@ function tick() {
   }
   if (anyRaidVictory) sfx.victory();
   else if (anyRaidDefeat) sfx.defeat();
+  __dbgCP("nach pendingRaids");
   if (anyAsteroid) sfx.arrival();
   if (anyMeteor) sfx.defeat();
   if (anyLfBlessing || anyLfMigration) sfx.arrival();
@@ -7115,6 +8863,7 @@ function tick() {
     }
   }
 
+  __dbgCP("nach Trader/Bauplan/Artefakt");
   const arrived = colonizations.filter(c => t >= c.arrivalTime);
   if (arrived.length) {
     arrived.forEach(c => { planets[c.id] = makePlanet(c.sys, c.slot); });
@@ -7202,6 +8951,20 @@ function tick() {
 
   // Angriffs- & Spionagemissionen: Ankunft am Ziel löst Schlacht oder Spionagebericht aus, danach Rückflug
   let anyVictory = false, anyDefeat = false;
+  __dbgCP("vor missions.forEach (outbound)");
+  // 🐛 DEBUG (temporär): ALLE Missionen loggen, die Algol III als Ziel ODER Ursprung betreffen —
+  // zeigt uns exakt welche Mission(en) gerade fällig werden (Duplikate? falsche IDs? doppelte Verarbeitung?).
+  const __dbgRelevantMissions = missions.filter(m => m.targetId === __dbgTargetId || m.originId === __dbgTargetId);
+  if (__dbgRelevantMissions.length) {
+    console.info("🐛 Missionen mit Bezug zu Algol III in diesem Tick:", __dbgRelevantMissions.map(m => ({
+      id: m.id, type: m.type, phase: m.phase, originId: m.originId, targetId: m.targetId,
+      arrivalTime: m.arrivalTime ? new Date(m.arrivalTime).toISOString() : null,
+      returnArrivalTime: m.returnArrivalTime ? new Date(m.returnArrivalTime).toISOString() : null,
+      dueNow_outbound: m.phase === "outbound" && t >= m.arrivalTime,
+      dueNow_return: m.phase === "returning" && t >= m.returnArrivalTime,
+      payload: m.payload, stationAtDest: m.stationAtDest,
+    })));
+  }
   missions.forEach(m => {
     if (m.phase !== "outbound" || t < m.arrivalTime) return;
     const pirate = pirateNests[m.targetId];
@@ -7443,6 +9206,7 @@ function tick() {
   });
   if (anyVictory) sfx.victory();
   else if (anyDefeat) sfx.defeat();
+  __dbgCP("nach missions.forEach outbound (Kämpfe/Transporte)");
 
   const returned = missions.filter(m => m.phase === "returning" && t >= m.returnArrivalTime);
   if (returned.length) {
@@ -7500,12 +9264,47 @@ function tick() {
   // Countdowns, Ressourcen-Zuwachs usw.), genau wie vorher schon der Planeten-Tab.
   // Die Flotte bleibt beim langsameren "nur bei Ereignis"-Tick (mainViewDirty),
   // da dort viele Missions-/Eingabefelder liegen, die nicht jede Sekunde neu aufgebaut werden sollen.
+  __dbgCP("ENDE (vor render)");
   if (mainViewDirty || currentView !== "fleet") {
     render();
   } else {
     renderHeader();
   }
+
+  // 🐛 DEBUG (temporär): Checkpoint-Kette für den Zielplaneten ausgeben, sobald sich zwischen zwei
+  // aufeinanderfolgenden Checkpoints etwas verändert hat — zeigt exakt, in welchem Tick-Abschnitt.
+  for (let __i = 1; __i < __dbgCheckpoints.length; __i++) {
+    const a = __dbgCheckpoints[__i-1], b = __dbgCheckpoints[__i];
+    const dM = b.metal - a.metal, dC = b.crystal - a.crystal, dD = b.deuterium - a.deuterium;
+    if (Math.abs(dM) > 0.5 || Math.abs(dC) > 0.5 || Math.abs(dD) > 0.5) {
+      console.warn(`🐛 CHECKPOINT-DIFF [${a.label} -> ${b.label}]`, { metal: `${a.metal.toFixed(0)} -> ${b.metal.toFixed(0)} (${dM>0?"+":""}${dM.toFixed(0)})`, crystal: `${a.crystal.toFixed(0)} -> ${b.crystal.toFixed(0)} (${dC>0?"+":""}${dC.toFixed(0)})`, deuterium: `${a.deuterium.toFixed(0)} -> ${b.deuterium.toFixed(0)} (${dD>0?"+":""}${dD.toFixed(0)})`, time: new Date().toISOString() });
+    }
+  }
+
+  // 🐛 DEBUG (temporär): globaler Nachher-Vergleich. War ein Lager vor diesem tick() überfüllt und ist
+  // danach spürbar (>0.5) gesunken (Deuterium-Fusionsverbrauch grob toleriert), wird das laut geloggt -
+  // egal WELCHER Teil von tick() dafür verantwortlich war.
+  Object.values(planets).forEach(pp => {
+    const before = __dbgTickBefore[pp.id];
+    if (!before) return; // neu erschienener Planet (Kolonie) diesen Tick - kein Vergleich möglich
+    const wasOver = before.metal > before.cap.metal || before.crystal > before.cap.crystal || before.deuterium > before.cap.deuterium;
+    if (!wasOver) return;
+    const dropMetal = before.metal - pp.resources.metal;
+    const dropCrystal = before.crystal - pp.resources.crystal;
+    const dropDeut = before.deuterium - pp.resources.deuterium;
+    if (dropMetal > 0.5 || dropCrystal > 0.5 || dropDeut > (before.cap.deuterium * 0.02 + 50)) {
+      console.warn("🐛 GLOBAL: Überfüllung wurde in diesem tick() reduziert!", { planet: pp.name, id: pp.id, before, after: { metal: pp.resources.metal, crystal: pp.resources.crystal, deuterium: pp.resources.deuterium }, drop: { metal: dropMetal, crystal: dropCrystal, deuterium: dropDeut }, time: new Date().toISOString() });
+    }
+  });
 }
+
+// 🐛 DEBUG (temporär): loggt bei JEDEM autopilotTick()-Aufruf (alle 5s), ob der Autopilot wirklich
+// früh aussteigt (autopilotOn=false) oder ob er trotz "Aus"-Anzeige tatsächlich aktiv durchläuft.
+const __origAutopilotTick = autopilotTick;
+autopilotTick = function(...args) {
+  console.debug("🐛 autopilotTick() Aufruf — autopilotOn:", autopilotOn, "autopilotAvailable():", autopilotAvailable(), "time:", new Date().toISOString());
+  return __origAutopilotTick.apply(this, args);
+};
 
 /* ---------- Rendering ---------- */
 
@@ -12376,6 +14175,7 @@ function beginGame() {
   if (window.stopWarpTunnel) window.stopWarpTunnel();
   startGameplayMusic();
   updateAutopilotButton();
+  applyDevBoostIfNeeded(); // 🧪 Dev-Profil: Rohstoffe/Dunkle Materie vor dem ersten Render auffüllen
   if (autopilotOn) autopilotTick(); // war beim letzten Mal schon an -> sofort erste Aktion statt 5s zu warten
   render();
   startGameLoops();
@@ -12650,9 +14450,18 @@ function beginGame() {
       `<option value="${p.id}" ${p.id === activeProfileId ? "selected" : ""}>${p.name}</option>`
     ).join("");
     updateDeleteProfileBtnVisibility();
+    updateDevButtonsVisibility();
     const activeProfile = profiles.find(p => p.id === activeProfileId);
     const profileManageBtnName = document.getElementById("profileManageBtnName");
     if (profileManageBtnName) profileManageBtnName.textContent = activeProfile ? activeProfile.name : "–";
+  }
+
+  // 🧪 Dev-Universum: Löschen-Button nur einblenden, wenn es aktuell (mindestens) ein Dev-Profil gibt
+  function updateDevButtonsVisibility() {
+    const deleteDevProfileBtn = document.getElementById("deleteDevProfileBtn");
+    if (!deleteDevProfileBtn) return;
+    const hasDev = loadProfiles().some(p => p.dev);
+    deleteDevProfileBtn.style.display = hasDev ? "" : "none";
   }
 
   renderProfileOptions();
@@ -12774,6 +14583,64 @@ function beginGame() {
 
       sfx.click();
       if (id === activeProfileId) {
+        // Aktives Profil wurde gelöscht -> zurück auf das Hauptprofil wechseln
+        setActiveProfileId(DEFAULT_PROFILE_ID);
+        location.reload();
+      } else {
+        renderProfileOptions();
+      }
+    });
+  });
+
+  // 🧪 Dev-Universum: Ein-Klick-Erstellung — eigenes Profil mit 10.000x Geschwindigkeit, dev:true-Flag
+  // (steuert Sofort-Bau + Ressourcen-Auffüllung, siehe IS_DEV_PROFILE / applyDevBoostIfNeeded weiter oben).
+  document.getElementById("createDevProfileBtn").addEventListener("click", () => {
+    const profiles = loadProfiles();
+    const existing = profiles.find(p => p.dev);
+    const proceed = () => {
+      const id = `pdev${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
+      profiles.push({ id, name: "🧪 Dev-Uni", speed: 10000, dev: true });
+      saveProfiles(profiles);
+      setActiveProfileId(id);
+      sfx.click();
+      location.reload(); // neues Profil bekommt erst nach Reload seine feste Heimatwelt sowie Geschwindigkeit/Dev-Modus
+    };
+    if (existing) {
+      showConfirmDialog({
+        icon: "🧪",
+        title: "Weiteres Dev-Universum anlegen?",
+        text: `Es existiert bereits ein Dev-Universum ("${existing.name}"). Trotzdem ein weiteres anlegen?`,
+        okLabel: "Anlegen",
+        danger: false
+      }).then(ok => { if (ok) proceed(); });
+    } else {
+      proceed();
+    }
+  });
+
+  // 🧪 Dev-Universum: Ein-Klick-Löschung — findet automatisch das (erste) Profil mit dev:true,
+  // ohne dass man es vorher im Profil-Dropdown manuell auswählen muss.
+  document.getElementById("deleteDevProfileBtn").addEventListener("click", () => {
+    const profiles = loadProfiles();
+    const target = profiles.find(p => p.dev);
+    if (!target) return;
+    showConfirmDialog({
+      icon: "🗑",
+      title: `Dev-Universum "${target.name}" löschen?`,
+      text: "Der komplette Test-Spielstand geht dabei verloren. Das kann nicht rückgängig gemacht werden.",
+      okLabel: "Löschen",
+      danger: true
+    }).then(ok => {
+      if (!ok) return;
+      saveProfiles(profiles.filter(p => p.id !== target.id));
+      if (storageAvailable) { try { localStorage.removeItem(saveKeyForProfile(target.id)); } catch(e) {} }
+      try {
+        const reg = loadHomeworldRegistry();
+        if (reg[target.id]) { delete reg[target.id]; saveHomeworldRegistry(reg); }
+      } catch(e) {}
+
+      sfx.click();
+      if (target.id === activeProfileId) {
         // Aktives Profil wurde gelöscht -> zurück auf das Hauptprofil wechseln
         setActiveProfileId(DEFAULT_PROFILE_ID);
         location.reload();
