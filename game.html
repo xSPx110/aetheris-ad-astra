@@ -3,6 +3,297 @@
 ============================================================
  CHANGELOG — neue Einträge kommen immer ganz nach OBEN, unter diese Zeile.
 
+v0.53.54
+- Nachbesserung (Feedback: Offiziers-/Spezies-Bilder wären in der bisherigen 44×44px-Icon-Box zu klein/
+  schmal): Offiziers-Lounge-Karten und Spezies-Auswahlkarten (Erst-Ansiedlung + Umsiedlung) nutzen jetzt
+  volle Kartenbreite als Hero-Bild oben, exakt gleiches Muster wie die Schwarzmarkt-Artikel-Detailansicht
+  (`.market-item-hero`, 16:10-Seitenverhältnis, `object-fit:cover`, lautloser Emoji-Fallback) statt der
+  kleinen Icon-Box aus Listen-Zeilen. Name/Beschreibung/Knopf sitzen jetzt sauber darunter statt seitlich
+  neben einem winzigen Bild. Betrifft `officerImgSrc()`-Karten und `speciesImgSrc()`-Karten — reine
+  Layout-Änderung, keine neuen Bildpfade, keine Logik-Änderung.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.53" auf "v0.53.54" erhöht.
+
+v0.53.53
+- Neu: Dyson-Sphäre-Kachel im Mehr-Menü bekommt jetzt ein eigenes Nav-Icon statt des rohen
+  🔆-Emojis, exakt gleiches Muster wie alle anderen Mehr-Menü-Kacheln (Bild mit lautlosem Emoji-
+  Fallback). Erwarteter Pfad: `bilder/icons/navDyson/navDyson_1.png`.
+- Neu: Bildsystem für die 4 Genlinie-Spezies (Menschen/Silicae/Synthiden/Solenari) verdrahtet — bisher
+  nur Emoji. Neue Funktion `speciesImgSrc(key)` liefert `bilder/lebensform/<key>/<key>_1.png`, genutzt
+  über `iconBoxHtml()` an beiden Stellen, an denen Spezies zur Auswahl stehen: Erst-Ansiedlung
+  (`renderLifeforms()`, Planet ohne Genlinie) und Umsiedlung (Spezies-Wechsel-Picker). Fällt wie
+  überall automatisch aufs bisherige Spezies-Emoji zurück, solange die Bilddatei fehlt. Erwartete
+  Ordnerstruktur: `bilder/lebensform/human/human_1.png`, `bilder/lebensform/rocktal/rocktal_1.png`,
+  `bilder/lebensform/mecha/mecha_1.png`, `bilder/lebensform/kaelesh/kaelesh_1.png` — Ordnername folgt
+  wie überall dem internen Spezies-`key`, nicht dem angezeigten Namen (`rocktal` → "Silicae",
+  `mecha` → "Synthiden", `kaelesh` → "Solenari").
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.52" auf "v0.53.53" erhöht.
+
+v0.53.52
+- Neu: Bildsystem für die Offiziers-Lounge verdrahtet (bisher nur Emoji-Icons). Jeder der 8 Offiziere
+  bekommt jetzt eine eigene Bild-Box in der Offiziers-Karte, analog zu allen anderen Systemen im Spiel
+  (Gebäude/Schiffe/Forschung/etc.): neue Funktion `officerImgSrc(key)` liefert
+  `bilder/offiziere/<key>/<key>_1.png`, gerendert über die schon bestehende generische `iconBoxHtml()`
+  (44×44-Box, fällt automatisch und lautlos aufs bisherige Emoji zurück, solange die Bilddatei noch
+  nicht existiert — kein Absturz, keine Layout-Änderung falls Bild fehlt). Erwartete Ordnerstruktur:
+  `bilder/offiziere/admiral/admiral_1.png`, `bilder/offiziere/ingenieur/ingenieur_1.png`,
+  `bilder/offiziere/techniker/techniker_1.png`, `bilder/offiziere/geologe/geologe_1.png`,
+  `bilder/offiziere/kommodore/kommodore_1.png`, `bilder/offiziere/kanzlerin/kanzlerin_1.png`,
+  `bilder/offiziere/stratege/stratege_1.png`, `bilder/offiziere/schmuggler/schmuggler_1.png` — Ordner-
+  und Dateiname folgen wie überall im Spiel dem internen `key`, nicht dem angezeigten Namen
+  (z.B. `admiral` → "Flottenmeister"), damit es konsistent zur bestehenden Konvention bleibt.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.51" auf "v0.53.52" erhöht.
+
+v0.53.51
+- Bugfix (Feedback: "die Module werden in einer Spirale/Spirallinie angeordnet"): In der Dyson-
+  Sphären-3D-Ansicht (dysonsphere-Begleitdatei) liefen die Panel-Positionen bisher über
+  `theta = index * GOLDEN_ANGLE` direkt auf dem Ankunftsindex. Mathematisch ergibt das zwar für die
+  volle Endmenge eine gleichmäßige Kugelverteilung, aber weil aufeinanderfolgende Panele dabei auch
+  aufeinanderfolgende Theta-Werte bekamen, "wanderte" jedes neu montierte Panel beim Zusehen sichtbar
+  um genau einen goldenen Winkel weiter als sein Vorgänger — optisch entstand dadurch eine klar
+  erkennbare Spirallinie statt einer über die Sphäre verteilt wirkenden Punktwolke.
+  Behoben nach Vorlage der separaten `dyson-vorschau.html` (dort bereits getestet): feste Gesamtzahl
+  (`DYSON_SPHERE_TOTAL_PANELS = 1.000`, war eh schon final fixiert) mit klassischer Fibonacci-Kugel-
+  Formel für die Positionen selbst (`fixedPanelPosition()`, Index `k = 0..999`, für immer
+  unveränderlich) — die Auftauchreihenfolge kommt jetzt aber aus einer Bit-Umkehr-Permutation
+  (`bitReverse()`/`REVEAL_ORDER`, klassische Technik aus FFT-/Bildaufbau fürs "gleichmäßig werdende"
+  Füllen) statt direkt aus dem Index. Dadurch wirkt jede Zwischenanzahl an Panelen gleichmäßig über
+  die Kugel verteilt, ganz ohne sichtbare Spirale. Rein visueller Fix in `dysonsphere.html` — betrifft
+  nur die 3D-Anzeige, keine Auswirkung auf `dysonState.panelsBuilt`/Spielstand/Balancing.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.50" auf "v0.53.51" erhöht.
+
+v0.53.50
+- Feedback (mit Screenshot, "lol genau andersrum wäre richtig xD"): der `blur()`-Filter auf gesperrten
+  Kacheln aus v0.53.49 sieht in der Praxis seltsam aus, vor allem wenn wegen einer aktiven Bau-
+  Warteschlange fast das ganze Baumenü gleichzeitig gesperrt/unscharf wird (normales, korrektes
+  Verhalten — pro Planet läuft nur eine Bau-Aktion gleichzeitig — sah nur mit Blur ungewohnt aus).
+  Zusätzlich technisch ohnehin unauflösbar: "Sterne unscharf, Bild scharf" UND "Bild unscharf" können
+  beide nicht beides gleichzeitig erfüllen, wenn das Bild die Kachel komplett abdeckt. Blur auf
+  `.thumb-locked` wieder entfernt, zurück zum ursprünglichen reinen Ausgrauen (opacity + grayscale,
+  ohne Blur).
+
+v0.53.49
+- Bugfix (Feedback "immer noch nicht verschwommen bei den ausgegrauten Kacheln"): der
+  `backdrop-filter`-Ansatz aus v0.53.48 konnte gar nicht sichtbar werden. `backdrop-filter` blurt nur,
+  was HINTER dem Element liegt — bei einer Kachel mit vollflächigem, deckendem Bild (`.thumb-bg-img`,
+  object-fit:cover) liegt das Bild aber selbst DAVOR und verdeckt den eigentlich schon geblurrten
+  Hintergrund komplett, bevor er sichtbar wird. Durch die reduzierte Deckkraft (opacity:0.42) sieht man
+  danach nur noch die SCHARFE Seite dahinter durchscheinen (opacity blendet mit der echten Seite,
+  nicht mit dem intern geblurrten Zwischenergebnis). Fix: statt `backdrop-filter` jetzt echtes
+  `filter: blur(2.5px)` zusätzlich zum bestehenden `grayscale(55%)` — das blurt das tatsächlich
+  sichtbare Bild/Icon der Kachel selbst, unabhängig davon was dahinterliegt, und ist dadurch garantiert
+  sichtbar.
+
+v0.53.48
+- Klarstellung: die Gold-Tönung aus v0.53.47 war der falsche Ansatz, wieder entfernt. Eigentlich
+  gemeint war: bei ausgegrauten/gesperrten Kacheln (`.thumb-locked` — Bau/Forschung/Mond/Lifeform)
+  scheinen durch die reduzierte Deckkraft (opacity:0.42) die Sterne im Hintergrund sichtbar durch —
+  die sollten verschwommen sein statt scharf. Fix: `.thumb-locked` bekommt jetzt zusätzlich
+  `backdrop-filter: blur(4px)`, das weicht genau das auf, was durch die Transparenz der gesperrten
+  Kachel hindurchscheint. Betrifft nur den gesperrten Zustand — normale, freigeschaltete Kacheln mit
+  Bild bleiben unverändert 100% scharf/deckend.
+
+v0.53.47
+- Feedback "da hat sich nichts geändert": 7% Gold-Tönung war auf bunten Fotos schlicht zu schwach, um
+  überhaupt wahrnehmbar zu sein. Deutlich verstärkt (0.07 → 0.22) und einen diagonalen Glanzstreifen
+  (linear-gradient mit hellen/dunklen Bändern bei 115°) dazugenommen — sieht jetzt sichtbar nach einer
+  echten getönten Glasscheibe vor dem Foto aus, statt nur kaum merklich wärmer.
+
+v0.53.46
+- Feedback (mit Screenshot): "wenn die echten Bilder geladen sind, ist von Milchglas nix mehr zu
+  sehen, Bilder sollen scharf bleiben, aber der Look soll trotzdem zum Rest passen". Technischer
+  Hintergrund: das Bild (`.thumb-bg-img`, object-fit:cover, deckt die ganze Kachel ab) liegt über dem
+  eigenen Milchglas-Hintergrund der Kachel und verdeckt ihn komplett — ein scharfes Foto UND ein
+  sichtbar verschwommener Hintergrund dahinter schließen sich technisch aus. Lösung: kein Blur auf dem
+  Bild selbst (bleibt zu 100% scharf), stattdessen ein leichter warmer Tönungsfilm (`rgba(212,175,55,
+  0.07)`) über dem bestehenden Abdunklungs-Verlauf (der fürs lesbare Level-Label unten sorgt) — wie
+  eine leicht getönte Glasscheibe vor einem scharfen Foto. Betrifft alle drei Stellen mit demselben
+  Muster: Bau-/Schiffs-/Verteidigungs-/Forschungs-/Markt-/Mond-/Lifeform-Kacheln, Flotten-Kacheln und
+  die Kacheln im Mehr-Menü.
+
+v0.53.45
+- Feedback "warum werden bei Forschung die Kacheln, die man nicht erforschen kann, nicht verdunkelt
+  so wie bei Bau?": Die `.thumb-locked`-Klasse (ausgegraut + Graustufen-Filter) wurde beim Rendern
+  zwar korrekt auch an gesperrte research-thumb/moon-building-thumb/lifeform-building-thumb-Kacheln
+  vergeben — es gab dafür aber nur eine CSS-Regel für `.building-thumb.thumb-locked`, keine für die
+  anderen drei Kachel-Typen. Die Klasse war also im HTML da, hatte aber keine Wirkung. Jetzt gilt
+  dieselbe Ausgrau-Regel für alle vier Kachel-Typen.
+
+v0.53.44
+- Bugfix (Feedback "Intergalaktisches Forschungsnetzwerk lässt sich erforschen, obwohl die
+  Voraussetzungen nicht erfüllt sind — bitte auch die anderen Forschungen checken"): kein
+  Einzelfall-Bug bei dieser einen Forschung, sondern ein systemischer. `startConstruction()` (Gebäude),
+  `startShipBuild()` und `startDefenseBuild()` prüfen alle korrekt `meetsRequirement()`, bevor sie
+  starten — bei `startResearch()` fehlte diese Zeile komplett. Die "Erforschen"-Knöpfe in der
+  Detailansicht waren zwar korrekt per `disabled` gesperrt, aber ein kurzer Tap auf eine gesperrte
+  Kachel im Forschungs-Streifen (`.research-thumb`) ruft `startResearch()` direkt auf, ganz ohne
+  Prüfung — das betraf dadurch JEDE Forschung mit `requires`/`requiresBuildings` (aktuell u.a.
+  networkTech "Intergalaktisches Forschungsnetzwerk", plasmaTech, naniteFactory, aiTech), nicht nur
+  die eine gemeldete. Fix: `meetsRequirement()`-Prüfung direkt in `startResearch()` ergänzt — das ist
+  jetzt die eine gemeinsame, verlässliche Stelle, unabhängig davon, über welchen der drei UI-Pfade
+  (Detail-Button, Kachel-Tap, Autopilot) startResearch() aufgerufen wird. Nebenbei: die beiden
+  `meetsRequirement()`-Aufrufe in der Forschungsansicht (für die Sperr-Anzeige/🔒-Badge) bekommen jetzt
+  konsequent den aktiven Planeten übergeben statt `undefined`, für den Fall dass künftig mal eine
+  Forschung ein `requiresBuildings` OHNE `requiresAnyPlanet` bekommt.
+
+v0.53.43
+- Feedback "das müsste aus den Monden entfernt werden, da die Montage jetzt in der Sonnenwerft
+  geschieht": Die komplette "Dyson-Sphäre — Panel-Montage"-Sektion auf Monden (Panele-Zähler,
+  3D-Ansicht-Knopf, Sternenenergie-Rückversand + der erklärende Hinweistext) war ein Relikt aus der
+  Zeit vor der Sonnenwerft-Erweiterung (Phase 13) und stand nur noch aus historischen Gründen auf
+  Monden. Beim genaueren Hinsehen stellte sich raus: es gibt dafür längst eine eigene, vollständigere
+  Seite (renderDysonView() im Mehr-Menü — Fortschrittsbalken mit Gesamtziel, Vollautomatik-Schalter,
+  Rückversand, alles an einer Stelle) — die Mond-Sektion war also reines Duplikat. Einfach komplett
+  entfernt, keine Funktionalität geht verloren.
+
+v0.53.42
+- Feedback "hinter dem Sonnensystem müsste auch noch leicht Milchglas sein" — .system-orbit-wrap
+  (die SVG-Orbit-Grafik in der Galaxie-Sternenkarte, siehe ganz erste Rückmeldung zu diesem Thema)
+  war bisher komplett transparent, kein eigener Hintergrund. Bekommt jetzt denselben leichten
+  Milchglas-Look wie .card (3px Blur, dezenter Farb-Tint).
+- Nebenbei mitgenommen: Autopilot-Banner und Handelsschiff-Banner (oben auf jeder Seite) hatten noch
+  keinen Blur, nur reine Transparenz ohne Weichzeichnung — jetzt konsistent mit dem restlichen
+  Glas-Look (3px Blur dazu).
+
+v0.53.41
+- Feedback "die helle Farbe gefällt mir nicht, will die Original-Farbe" — der weiße Aufhellungs-
+  Schleier (`linear-gradient(rgba(255,255,255,x),...)`) aus v0.53.39 wieder komplett entfernt. Karten/
+  Fenster/Knöpfe nutzen jetzt wieder genau den ursprünglichen, warmen Theme-Farbton (die dunklen
+  Braun-/Gold-Töne wie überall im Spiel), nur weiterhin transparent + leicht geblurrt (siehe v0.53.40)
+  statt komplett blickdicht.
+
+v0.53.40
+- Feedback anhand Screenshots: Hintergrund/Sterne generell gut so (klar, unverändert), aber Karten
+  ("Letzte Ereignisse", Planeten-Kacheln) wirken weiterhin komplett flach/einfarbig, kein Glas-Eindruck
+  sichtbar. Ursache eingegrenzt: starker Blur (10-14px) über dem fast durchgehend schwarzen, sehr
+  spärlichen Sternfeld verwäscht die paar Lichtpunkte darunter praktisch vollständig weg — übrig
+  bleibt eine gleichmäßige, blur-unabhängig wirkende Fläche, die sich nicht von einer Volltonfarbe
+  unterscheidet, egal wie hell/milchig der Tint gewählt wird. Fix: Blur auf .card/.building-detail auf
+  3px runter (nur noch sanftes Kanten-Weichzeichnen), auf .resource-modal-sheet (Fenster) auf 4px,
+  auf Knöpfe auf 3px — UND deutlich transparenter (Karten-Alpha 0.45 → 0.3, Fenster 0.5 → 0.42),
+  damit einzelne Sterne als tatsächlich wahrnehmbare, leicht weiche Punkte durch die Fläche
+  durchscheinen statt komplett zu verschwinden. Das erzeugt den "ich seh was dahinter, nur angehaucht"
+  -Eindruck von echtem Glas, statt nur eine andere Flächenfarbe.
+
+v0.53.39
+- Feedback "Knöpfe und Fenster sind wieder einfarbig, kein Milchglas-Effekt mehr sichtbar, und
+  ausgegraute/gesperrte Knöpfe sind zwar transparent aber nicht milchig". Grund: ein reiner
+  Dunkel-Tint + Blur über dem fast durchgehend schwarzen Sternenhimmel sieht optisch praktisch
+  identisch zu einer flachen Volltonfarbe aus — es gibt kaum Helligkeit/Kontrast dahinter, die der
+  Blur sichtbar verwaschen könnte. Fix: .card/.building-detail/.resource-modal-sheet (Fenster) und
+  button.upg/button.small-btn (auch im :disabled-Zustand, da der nur Rand-/Textfarbe überschreibt,
+  nicht den Hintergrund) bekommen jetzt zusätzlich einen echten hellen Schleier
+  (`linear-gradient(rgba(255,255,255,x),...)` über dem bisherigen Farb-Tint) plus
+  `brightness()`/`saturate()` im backdrop-filter — dadurch wirken sie jetzt tatsächlich wie
+  angehauchtes, mattes Glas statt wie eine simple, leicht transparente Fläche.
+
+v0.53.38
+- Klarstellung "der Hintergrund kann klar sein, ich meinte wirklich die Knöpfe und Fenster" —
+  #mainView bekommt gar keinen Tint/Blur mehr, Sterne im Spielbereich sind wieder komplett scharf
+  und unverändert (Stand vor v0.53.34). Milchglas-Effekt sitzt jetzt ausschließlich auf den
+  Bausteinen, die wirklich "Knopf" oder "Fenster" sind: .card/.building-detail (10px Blur),
+  .resource-modal-sheet — also alle Popup-Fenster wie Kolonisieren/Planet vernichten (14px Blur, am
+  kräftigsten, da echtes Fenster) und button.upg/button.small-btn/.galaxy-details-toggle (8px Blur,
+  etwas milchiger gefüllt als zuvor).
+
+v0.53.37
+- Bugfix (Feedback "jetzt sieht man gar keine Sterne mehr"): Der Frosted-Glass-Blur aus v0.53.36
+  (14px auf #mainView, 12px auf .card/.building-detail/.resource-modal-sheet) war viel zu stark für
+  das Sternfeld dahinter. Ein Gaussian-Blur verteilt die Helligkeit jedes ~1-2px großen Sternpunkts
+  über eine deutlich größere Fläche (bei 14px Radius über ~28px+ Durchmesser) — die Gesamthelligkeit
+  bleibt zwar erhalten, aber die Spitzenhelligkeit pro Pixel sinkt so stark, dass die Sterne gegen den
+  fast schwarzen Hintergrund praktisch komplett verschwinden, statt nur "milchig" auszusehen. Fix:
+  Blur-Radius quer durchs Stylesheet deutlich reduziert (mainView 14px → 3px, Karten/Popups 12px → 4px,
+  Knöpfe 8px → 3px), zusätzlich die Deck-Deckkraft etwas gesenkt (mainView-Tint 0.32 → 0.2, Karten
+  0.5 → 0.4), damit die Sterne als weiche, leicht verwaschene Punkte sichtbar bleiben statt komplett
+  wegzublurren.
+
+v0.53.36
+- Feedback "Sternenhintergrund im Spielbereich soll wie mattes/milchiges Glas aussehen, nicht einfach
+  nur dunkel — Knöpfe und Karten auch". Der bisherige reine Dunkel-Tint auf #mainView wird zu echtem
+  Frosted-Glass: `backdrop-filter: blur(14px) saturate(1.15)` weicht das #bgStarfield-Canvas dahinter
+  sichtbar auf, statt es nur abzudunkeln. Dieselbe Technik jetzt auch auf die wiederverwendeten
+  Bausteine .card, .building-detail, .resource-modal-sheet (alle Popup-Fenster) sowie auf
+  button.upg / button.small-btn / .galaxy-details-toggle (bisher komplett transparent, jetzt
+  leicht milchig gefüllt: rgba(212,175,55,0.08) + blur(8px)). Betroffen sind alle zwei Stellen, die
+  bisher hart `background:#161010;`/`#181310;` gesetzt hatten (~29 Regeln quer durchs Stylesheet).
+
+v0.53.33
+- Feedback "Sterne auf Spielseiten komplett unsichtbar": Stimmt — die einzelnen Unterseiten (Planet,
+  Werft, Forschung, Galaxie, Flotte...) sind so dicht mit Karten/Kacheln gefüllt (oft nur 8px Gap
+  dazwischen), dass technisch zwar überall das `#bgStarfield`-Canvas rendert, aber real 0px Fläche
+  übrig blieb, um es zu sehen — nur die eher aufgeräumte Übersichtsseite hatte sichtbare Lücken.
+  Statt jede einzelne Kachel-Hintergrundfarbe quer durchs UI transparent zu machen (hohes Risiko für
+  Lesbarkeit/Kontrast), bekommt `#mainView` jetzt einen durchgehenden Innenabstand (`padding: 14px
+  12px 0`), der auf JEDER Unterseite garantiert einen sichtbaren Sternenrand um den Content zeigt —
+  zentral an einer Stelle, wirkt auf alle Ansichten gleichermaßen.
+
+v0.53.31
+- Feedback "wo sind da Sterne" + "viel zu regelmäßig": Die CSS-Tile-Sterne (radial-gradient auf
+  90-110px-Kacheln, seit v0.53.30 verdichtet) wiederholen sich sichtbar im Raster — bei genauem
+  Hinsehen (siehe Screenshot) viel zu ordentlich für ein Sternfeld, und in der Praxis kaum sichtbar.
+  Komplett ersetzt durch ein `<canvas id="bgStarfield">`, das per JS (`initBackgroundStarfield()`)
+  echte zufällig positionierte Sterne über den kompletten Viewport zeichnet (kein Kachel-Repeat mehr
+  möglich). Dichte an die Bildschirmfläche gekoppelt (~1 Stern/1400px², 260-1600 Sterne je nach
+  Fenstergröße), dezentes Twinkle per Canvas-Redraw (alle 150ms) statt CSS-Animation — günstiger bei
+  so vielen Sternen. Body-Hintergrund selbst ist jetzt nur noch die dezente goldene Vignette, alle
+  Sterne kommen aus dem Canvas-Layer.
+
+v0.53.30
+- Feedback "Sterne zu weit auseinander": Alle drei (mittlerweile durch Canvas ersetzten) Sternenschichten
+  im `<body>`-Hintergrund (Basis-Sternfeld + beide Twinkle-Layer `::before`/`::after`) deutlich
+  verdichtet — Kachelgröße jeweils halbiert (200px→100px, 180px→90px, 220px→110px). Da Sterndichte
+  mit der Fläche skaliert, ergab das ca. 4x so viele Sterne pro Bildschirmfläche, ohne dass mehr
+  Gradient-Punkte pro Kachel nötig waren. Betraf App-Spalte UND Breitbild-Rand gleichermaßen.
+
+v0.53.29
+
+v0.53.28
+- UI-Feinschliff: Den dezenten linken/rechten Rahmen-Strich um die App-Spalte (aus v0.53.27, sollte auf
+  breiten Bildschirmen die App-Kante markieren) wieder entfernt — sah als reine dünne Linie unschön aus.
+  Stattdessen ein weicher, dunkler Schlagschatten um die ganze Spalte (`box-shadow`), der sie nur sanft
+  vom Hintergrund abhebt statt mit einer harten Kontur zu umranden. Auf Handy weiterhin unsichtbar
+  (kein Platz drumherum, in dem ein Schatten sichtbar wäre).
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.27" auf "v0.53.28" erhöht.
+
+v0.53.27
+- UI: Grundlegendes responsives Layout für breite Bildschirme (PC). Bisher waren Header/Ressourcenleiste
+  und die Bottom-Nav komplett breiten-ungebunden und haben sich auf JEDER Bildschirmbreite bis zum Rand
+  gestreckt, während nur einzelne Ansichten (z.B. Planet/Werft über `.building-view`) zufällig schon eine
+  480px-Deckelung hatten — Ergebnis auf breiten Monitoren: gestreckter Header oben, schmale "Insel"
+  darunter, sah kaputt aus. Jetzt gibt es EINE gemeinsame App-Breite (neue CSS-Variable
+  `--app-max-width`) für die komplette Seite: `<body>` selbst (an dem Header/#mainView/Bottom-Nav direkt
+  hängen) ist jetzt zentriert und breiten-gedeckelt, die fixierte Bottom-Nav zieht bei derselben Breite
+  mit. Auf Handy unsichtbar (Viewport ist ohnehin schmaler als die Deckelung, keine optische Änderung).
+  Ab 720px Fensterbreite wächst die Deckelung von 480px auf 560px, damit die App auf PC nicht winzig
+  wirkt, aber auch nicht mehr rand-zu-rand über den ganzen Bildschirm reißt — inkl. Planeten-/
+  Werft-Ansicht, die jetzt dieselbe (statt einer separaten festen 480px-)Breite nutzt und dadurch auf
+  PC entsprechend etwas größer erscheint. `<html>` bekommt einen passenden dunklen Hintergrund, damit
+  außerhalb der zentrierten Spalte kein heller Rand aufblitzt; ein dezenter linker/rechter Rand markiert
+  auf breiten Bildschirmen die App-Kante (auf Handy unsichtbar, da am Bildschirmrand).
+  Nachtrag: Derselbe Fehler steckte auch im Mehr-Menü UND in "Einstellungen" (beide nutzen dieselbe
+  `.more-menu-sheet`-Klasse, ebenso Bestätigen-Dialog, Rangliste, Profil-Verwaltung & Co.) — das Sheet
+  spannte sich per `left:0;right:0` über die komplette (volle) Overlay-Breite. Jetzt ebenfalls mit
+  `max-width:var(--app-max-width)` + zentriert, genau wie Bottom-Nav/Planetenansicht.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.26" auf "v0.53.27" erhöht.
+
+v0.53.26
+- Balancing: Künstliche Planeten-Verknappung durch "Unbekannte Imperien" von 80% auf 60% der
+  unbesiedelten Slots gesenkt (`UNKNOWN_EMPIRE_BLOCK_RATIO` in der Konstante). Es bleiben also mehr
+  freie Planetenplätze zur echten Kolonisierung übrig, die künstliche Verknappung fällt spürbar
+  milder aus.
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.25" auf "v0.53.26" erhöht.
+
+v0.53.25
+- Bugfix: In der Dyson-Sphären-Sonnenwerft (dysonsphere-Begleitdatei) wurde die Mengeneingabe bei "Panel
+  montieren" (inkl. "Max"-Knopf) sowie beim Sternenenergie-Umtausch spätestens nach 1 Sekunde wieder auf
+  den Ausgangswert zurückgesetzt. Ursache: Der 1s-Absicherungs-Poll (`setInterval(...,1000)`) ruft
+  `renderWerftPanel()` jede Sekunde neu auf, die dabei komplett neu aufgebauten Eingabefelder (`werft-
+  count-input`, `werft-convert-amount-input`) hatten dabei immer den festen Template-Wert statt des
+  zuletzt vom Spieler gesetzten Werts. Behoben, indem der aktuelle Eingabewert vor jedem Neuaufbau
+  gemerkt und danach (geklemmt auf den gültig verfügbaren Bereich) wiederhergestellt wird — analog zum
+  bereits bestehenden Eingabe-Rettungsmechanismus in der Haupt-Datei (`prevInputs` in `render()`).
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.24" auf "v0.53.25" erhöht.
+
 v0.53.24
 - Neu: Mehrere Profile auf einmal löschen (im "Profil verwalten"-Fenster, neuer Knopf "Mehrere Profile
   auswählen & löschen…"). Öffnet ein eigenes Modal (`bulkDeleteProfilesModalOverlay`) mit einer Checkbox-
@@ -1677,91 +1968,110 @@ v0.50
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   * { box-sizing: border-box; }
-  body {
-    margin: 0; min-height: 100vh;
+  /* v0.53.27: Responsives Grund-Layout — die App ist Handy-first gebaut (Header/Ressourcen/Bottom-Nav
+     waren bisher komplett breiten-ungebunden und haben sich auf jeder Bildschirmbreite gestreckt),
+     während nur einzelne Ansichten (z.B. Planet/Werft über .building-view) zufällig schon eine
+     480px-Deckelung hatten. Ergebnis auf PC: gestreckter Header oben, schmale "Insel" darunter — genau
+     der gemeldete Bruch. Jetzt EINE gemeinsame App-Breite für die komplette Seite (Header + #mainView +
+     Bottom-Nav liegen alle direkt an <body>, siehe Kommentar dort), auf Handy unsichtbar (Viewport ist
+     eh schmaler als die Deckelung), auf breiten Bildschirmen ein zentrierter, etwas großzügigerer
+     "App-Rahmen" statt Rand-zu-Rand-Streckung. */
+  :root { --app-max-width: 480px; }
+  @media (min-width: 720px) {
+    :root { --app-max-width: 560px; }
+  }
+  /* v0.53.29: Breitbild-Deko — auf Full-HD & breiter bleibt links/rechts der App-Spalte
+     (--app-max-width) sonst einfach nur #0A0A0A stehen. body::before/::after (Sternentwinkeln)
+     sind zwar schon fixed/viewportweit und decken den Rand mit ab, aber ohne Farbe/Tiefe wirkt's
+     leer. Daher hier auf <html> ein paar sehr dezente, statische Nebel-Blobs (kein Animations-
+     Overhead) hinter allem — auf Handy (Viewport <= App-Breite) unsichtbar, da eh kein Rand da ist. */
+  html {
     background:
-      radial-gradient(1.3px 1.3px at 12px 18px, rgba(255,255,255,0.9), transparent 60%),
-      radial-gradient(1.3px 1.3px at 76px 54px, rgba(255,255,255,0.85), transparent 60%),
-      radial-gradient(1.1px 1.1px at 134px 22px, rgba(255,255,255,0.8), transparent 60%),
-      radial-gradient(1.3px 1.3px at 168px 96px, rgba(255,255,255,0.9), transparent 60%),
-      radial-gradient(1px 1px at 44px 122px, rgba(255,255,255,0.75), transparent 60%),
-      radial-gradient(1.2px 1.2px at 102px 158px, rgba(255,255,255,0.85), transparent 60%),
-      radial-gradient(1px 1px at 24px 176px, rgba(255,255,255,0.7), transparent 60%),
-      radial-gradient(1.2px 1.2px at 188px 150px, rgba(255,255,255,0.8), transparent 60%),
-      radial-gradient(0.8px 0.8px at 30px 66px, rgba(255,255,255,0.5), transparent 60%),
-      radial-gradient(0.8px 0.8px at 92px 100px, rgba(255,255,255,0.45), transparent 60%),
-      radial-gradient(0.8px 0.8px at 150px 68px, rgba(255,255,255,0.5), transparent 60%),
-      radial-gradient(0.8px 0.8px at 60px 8px, rgba(255,255,255,0.4), transparent 60%),
-      radial-gradient(0.8px 0.8px at 118px 188px, rgba(255,255,255,0.45), transparent 60%),
-      radial-gradient(1.1px 1.1px at 8px 96px, rgba(255,255,255,0.8), transparent 60%),
-      radial-gradient(0.9px 0.9px at 52px 40px, rgba(255,255,255,0.55), transparent 60%),
-      radial-gradient(1.2px 1.2px at 96px 12px, rgba(255,255,255,0.85), transparent 60%),
-      radial-gradient(0.8px 0.8px at 140px 130px, rgba(255,255,255,0.4), transparent 60%),
-      radial-gradient(1px 1px at 176px 40px, rgba(255,255,255,0.7), transparent 60%),
-      radial-gradient(0.9px 0.9px at 20px 150px, rgba(255,255,255,0.5), transparent 60%),
-      radial-gradient(1.1px 1.1px at 64px 178px, rgba(255,255,255,0.75), transparent 60%),
-      radial-gradient(0.8px 0.8px at 110px 74px, rgba(255,255,255,0.45), transparent 60%),
-      radial-gradient(1px 1px at 156px 190px, rgba(255,255,255,0.65), transparent 60%),
-      radial-gradient(0.7px 0.7px at 4px 40px, rgba(255,255,255,0.35), transparent 60%),
-      radial-gradient(0.9px 0.9px at 182px 8px, rgba(255,255,255,0.55), transparent 60%),
-      radial-gradient(0.7px 0.7px at 74px 116px, rgba(255,255,255,0.35), transparent 60%),
-      radial-gradient(1px 1px at 128px 46px, rgba(255,255,255,0.65), transparent 60%),
+      radial-gradient(ellipse 900px 700px at 8% 15%, rgba(212,175,55,0.05), transparent 60%),
+      radial-gradient(ellipse 1000px 800px at 95% 30%, rgba(120,80,200,0.055), transparent 60%),
+      radial-gradient(ellipse 800px 900px at 15% 85%, rgba(60,140,180,0.045), transparent 60%),
+      radial-gradient(ellipse 900px 700px at 90% 90%, rgba(180,60,90,0.04), transparent 60%),
+      #0A0A0A;
+    background-attachment: fixed;
+  }
+  /* v0.53.31: Feedback "wo sind da Sterne" + "viel zu regelmäßig" — die alten CSS-Tile-Sterne
+     (radial-gradient auf 90-110px Kacheln) wiederholen sich sichtbar im Raster und sind bei genauem
+     Hinsehen viel zu ordentlich für ein Sternfeld, dazu wirkten sie in Screenshots kaum sichtbar.
+     Ersetzt durch ein <canvas id="bgStarfield"> (siehe initBackgroundStarfield() im Script): echt
+     zufällig positionierte Sterne über den kompletten Viewport, Dichte an die Bildschirmfläche
+     gekoppelt, mit sanftem Twinkle. Body-Hintergrund bleibt nur noch die dezente goldene Vignette. */
+  body {
+    margin: 0 auto; min-height: 100vh; max-width: var(--app-max-width); position: relative;
+    box-shadow: 0 0 60px rgba(0,0,0,0.55);
+    background:
       radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.06), transparent 55%),
       #0A0A0A;
-    background-repeat: repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, no-repeat, no-repeat;
-    background-size: 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px, auto, auto;
-    background-attachment: fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed;
     color: #EDE4D3;
     font-family: 'IBM Plex Mono', ui-monospace, monospace;
     padding-bottom: 100px;
   }
-  body::before, body::after {
-    content:""; position:fixed; inset:0; pointer-events:none; z-index:-1;
-    background-repeat:repeat; background-attachment:fixed;
+  /* v0.53.35: Feedback "Planet vernichten soll oben beim Planetenbild als kleiner runder roter Knopf sein,
+     nicht permanent unten auf der Seite". Umbau: `renderLeavePlanetCard(p)` (bisher immer am Ende der
+     Planetenseite sichtbar, deckt "Planet verlassen"/"Planet vernichten" je nach Zustand ab) läuft jetzt
+     in einem eigenen Popup (`destroyPlanetModalOverlay`/`renderDestroyPlanetModalBody()`), das sich über
+     einen neuen 💥-Rundknopf oben links im Planetenbild (`planet-destroy-toggle-btn`, nur sichtbar wenn
+     nicht Heimatwelt) öffnet. Die beiden Aktions-Buttons darin ("🚪 Planet verlassen" / "💥 Vernichten")
+     werden bewusst NICHT mehr über den generischen `document.querySelectorAll(...)`-Block im
+     sekündlichen render()-Tick verkabelt, sondern eigenständig innerhalb von
+     renderDestroyPlanetModalBody() (nach dem Vorbild von renderColonizeModal()) — sonst würde sich bei
+     jedem Tick ein weiterer Klick-Listener auf demselben, außerhalb von #mainView liegenden und daher
+     NICHT jede Sekunde neu erzeugten Button stapeln. Solange das Popup offen ist, ruft render() bei
+     jedem Tick renderDestroyPlanetModalBody() erneut auf, damit z.B. der Countdown einer bereits
+     laufenden Vernichtung live weiterzählt.
+
+v0.53.34: Feedback "Sterne im Spielbereich zu hell, besonders in Übersicht + Galaxie-Sternenkarte
+     gut sichtbar". `#mainView` bekommt einen halbtransparenten dunklen Hintergrund (`rgba(0,0,0,0.45)`),
+     der über dem `#bgStarfield`-Canvas liegt (da im DOM/Stacking nach dem Canvas), aber unter den
+     Kacheln/Karten (die eigene, undurchsichtige Hintergründe haben). Dimmt dadurch gezielt nur das
+     Sternfeld innerhalb des Spielbereichs ab, ohne Kontrast/Lesbarkeit der UI-Elemente zu verändern.
+     Vorstart-/Titelbildschirm liegen außerhalb von #mainView und bleiben unverändert hell.
+
+v0.53.33: Bugfix — Sterne innerhalb der App-Spalte komplett unsichtbar (nur im Breitbild-Rand
+     sichtbar). Ursache: `body` hat `position:relative`, aber KEIN eigenes `z-index` -> body bildet
+     dadurch keinen eigenen Stacking-Context. Ein negativer z-index (wie bisher bei #bgStarfield)
+     wird dann nicht "hinter body, aber vor body's eigenem Hintergrund" einsortiert, sondern rutscht
+     eine Ebene weiter zurück und landet HINTER dem eigenen (undurchsichtigen) body-Hintergrund —
+     genau der Bereich, wo die App-Spalte liegt. Außerhalb der Spalte gibt's keinen body-Hintergrund
+     im Weg, deshalb waren die Sterne dort sichtbar, in der Spalte selbst aber nicht. Fix: kein
+     negativer z-index mehr nötig, das Canvas ist ohnehin der erste Kind-Knoten von <body> und malt
+     dadurch automatisch VOR dem body-Hintergrund, aber HINTER allen späteren Geschwister-Elementen
+     (Header/#mainView/Bottom-Nav) — exakt die gewünschte Reihenfolge. */
+  #bgStarfield {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; display: block;
+    width: 100vw; height: 100vh;
   }
-  body::before {
-    background-image:
-      radial-gradient(1.2px 1.2px at 10px 40px, #fff, transparent 60%),
-      radial-gradient(1px 1px at 50px 90px, #fff, transparent 60%),
-      radial-gradient(1.3px 1.3px at 100px 20px, #fff, transparent 60%),
-      radial-gradient(0.9px 0.9px at 140px 70px, #fff, transparent 60%),
-      radial-gradient(1.1px 1.1px at 170px 130px, #fff, transparent 60%),
-      radial-gradient(0.8px 0.8px at 30px 130px, #fff, transparent 60%),
-      radial-gradient(1px 1px at 70px 150px, #fff, transparent 60%),
-      radial-gradient(1.2px 1.2px at 120px 110px, #fff, transparent 60%),
-      radial-gradient(0.9px 0.9px at 155px 5px, #fff, transparent 60%),
-      radial-gradient(1px 1px at 5px 90px, #fff, transparent 60%),
-      radial-gradient(0.8px 0.8px at 85px 45px, #fff, transparent 60%),
-      radial-gradient(1.1px 1.1px at 20px 10px, #fff, transparent 60%),
-      radial-gradient(0.9px 0.9px at 165px 165px, #fff, transparent 60%),
-      radial-gradient(1px 1px at 60px 175px, #fff, transparent 60%),
-      radial-gradient(0.8px 0.8px at 110px 155px, #fff, transparent 60%);
-    background-size:180px 180px;
-    animation: twinkleA 3.2s ease-in-out infinite;
+  /* v0.53.33
+- Bugfix "Sterne im Spielfeld fehlen": Screenshots zeigten Sterne NUR im Breitbild-Rand außerhalb der
+  App-Spalte, innerhalb der Spalte komplett schwarz — also genau umgekehrt zum eigentlichen Ziel.
+  Ursache: `body` hat `position:relative`, aber kein eigenes `z-index` gesetzt, bildet dadurch KEINEN
+  eigenen Stacking-Context. Der bisherige negative z-index von `#bgStarfield` sortierte sich deshalb
+  nicht "hinter body, aber vor body's eigenem Hintergrund" ein, sondern rutschte eine Ebene weiter
+  zurück und landete HINTER dem eigenen (undurchsichtigen) body-Hintergrund — exakt der Bereich, in
+  dem die App-Spalte liegt. Außerhalb der Spalte gibt's keinen body-Hintergrund im Weg, daher waren
+  die Sterne nur dort sichtbar. Fix: `#bgStarfield` braucht keinen negativen z-index — als erster
+  Kind-Knoten von `<body>` malt es ohnehin automatisch über dem body-Hintergrund, aber unter allen
+  späteren Geschwister-Elementen (Header/#mainView/Bottom-Nav haben eigene z-index-Werte ≥10).
+
+v0.53.32: Feedback "Sterne auf Spielseiten komplett unsichtbar" — stimmt: die einzelnen Seiten
+     (Planet, Werft, Forschung, Galaxie...) sind so dicht mit Karten/Kacheln gefüllt (oft nur 8px Gap
+     dazwischen), dass technisch zwar überall Sterne rendern, aber real 0px Fläche übrig bleibt, um
+     sie zu sehen. Statt jede Kachel-Hintergrundfarbe einzeln transparent zu machen (hohes Risiko für
+     Lesbarkeit/Kontrast quer durchs ganze UI), bekommt #mainView jetzt einen durchgehenden Rand, der
+     auf JEDER Unterseite garantiert sichtbaren Sternenhimmel um den Content zeigt. */
+  #mainView {
+    padding: 14px 12px 0;
+    /* v0.53.38: Feedback "der Hintergrund kann klar sein, ich meinte wirklich die Knöpfe und Fenster" —
+       #mainView selbst braucht also gar keinen Tint/Blur mehr, die Sterne dahinter sollen einfach
+       scharf und unverändert durchscheinen (wie ganz am Anfang, vor v0.53.34). Der Milchglas-Effekt
+       gehört nur auf die Bausteine, die tatsächlich "Knopf" oder "Fenster" sind — siehe .card,
+       .building-detail, .resource-modal-sheet, button.upg, button.small-btn, .galaxy-details-toggle
+       weiter unten, die dafür jetzt einen kräftigeren Blur bekommen. */
   }
-  body::after {
-    background-image:
-      radial-gradient(1.1px 1.1px at 25px 60px, #fff, transparent 60%),
-      radial-gradient(0.9px 0.9px at 75px 15px, #fff, transparent 60%),
-      radial-gradient(1.2px 1.2px at 130px 55px, #fff, transparent 60%),
-      radial-gradient(1px 1px at 175px 100px, #fff, transparent 60%),
-      radial-gradient(0.8px 0.8px at 45px 105px, #fff, transparent 60%),
-      radial-gradient(1.1px 1.1px at 95px 145px, #fff, transparent 60%),
-      radial-gradient(0.9px 0.9px at 15px 165px, #fff, transparent 60%),
-      radial-gradient(1px 1px at 150px 180px, #fff, transparent 60%),
-      radial-gradient(0.8px 0.8px at 200px 30px, #fff, transparent 60%),
-      radial-gradient(1.1px 1.1px at 195px 150px, #fff, transparent 60%),
-      radial-gradient(0.9px 0.9px at 60px 40px, #fff, transparent 60%),
-      radial-gradient(1px 1px at 110px 10px, #fff, transparent 60%),
-      radial-gradient(0.8px 0.8px at 10px 120px, #fff, transparent 60%),
-      radial-gradient(1.1px 1.1px at 160px 200px, #fff, transparent 60%),
-      radial-gradient(0.9px 0.9px at 210px 90px, #fff, transparent 60%);
-    background-size:220px 220px;
-    animation: twinkleB 4.1s ease-in-out infinite;
-    animation-delay: 1.4s;
-  }
-  @keyframes twinkleA { 0%,100% { opacity:0.9; } 50% { opacity:0.25; } }
-  @keyframes twinkleB { 0%,100% { opacity:0.3; } 50% { opacity:0.9; } }
   .display { font-family: 'Cinzel', serif; }
   .header {
     position: sticky; top: 0; z-index: 10;
@@ -1779,6 +2089,7 @@ v0.50
 
   .bottom-nav {
     position: fixed; left:0; right:0; bottom:0; z-index: 30;
+    max-width: var(--app-max-width); margin: 0 auto;
     display:flex; gap:2px;
     background: rgba(10,10,10,0.98); backdrop-filter: blur(6px);
     border-top: 1px solid rgba(212,175,55,0.25);
@@ -1817,15 +2128,15 @@ v0.50
   .collapsible-list details[open] summary .ap-details-arrow { transform:rotate(90deg); }
   .more-menu-overlay.open { display:block; }
   .more-menu-sheet {
-    position:absolute; left:0; right:0; bottom:0;
-    background:#161010; border-top:1px solid rgba(212,175,55,0.3);
+    position:absolute; left:0; right:0; bottom:0; max-width:var(--app-max-width); margin:0 auto;
+    background:rgba(22,16,16,0.42);backdrop-filter:blur(4px) saturate(1.2);-webkit-backdrop-filter:blur(4px) saturate(1.2); border-top:1px solid rgba(212,175,55,0.3);
     border-radius:16px 16px 0 0; padding:10px 10px calc(14px + env(safe-area-inset-bottom, 0px));
     display:grid; grid-template-columns:1fr 1fr; gap:8px;
   }
   .more-menu-sheet .tab {
     position:relative; overflow:hidden; display:flex;
     flex-direction:column; align-items:center; justify-content:flex-end; gap:2px; padding:10px 6px 8px;
-    border:1px solid #2B1E19; background:#181310; border-radius:12px; font-size:13px; text-transform:none; letter-spacing:normal;
+    border:1px solid #2B1E19; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15); border-radius:12px; font-size:13px; text-transform:none; letter-spacing:normal;
     min-height:132px;
   }
   .more-menu-sheet .tab::after {
@@ -1896,7 +2207,7 @@ v0.50
   .planet-switcher { position:relative; margin-top:10px; }
   .ps-trigger {
     display:flex; align-items:center; gap:8px; padding:6px 10px; max-width:100%;
-    border:1px solid #2B1E19; border-radius:10px; background:#181310; color:#EDE4D3;
+    border:1px solid #2B1E19; border-radius:10px; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15); color:#EDE4D3;
     cursor:pointer; font-size:12px; font-family:inherit;
   }
   .ps-trigger:hover { border-color:#D4AF37; }
@@ -1904,7 +2215,7 @@ v0.50
   .ps-trigger .ps-caret { margin-left:auto; color:#8A7A6A; font-size:10px; flex-shrink:0; }
   .ps-menu {
     position:absolute; top:calc(100% + 4px); left:0; z-index:20; min-width:220px; max-width:80vw;
-    max-height:280px; overflow-y:auto; background:#181310; border:1px solid #2B1E19; border-radius:10px;
+    max-height:280px; overflow-y:auto; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15); border:1px solid #2B1E19; border-radius:10px;
     padding:6px; display:none; box-shadow:0 8px 24px rgba(0,0,0,0.5);
   }
   .ps-menu.open { display:block; }
@@ -1922,7 +2233,7 @@ v0.50
 
   .gauges { display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:14px; }
   .mini-gauges { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-  .gauge { background:#161010; border:1px solid #2A1A1A; border-radius:12px; padding:12px 10px; }
+  .gauge { background:rgba(22,16,16,0.42);backdrop-filter:blur(4px) saturate(1.2);-webkit-backdrop-filter:blur(4px) saturate(1.2); border:1px solid #2A1A1A; border-radius:12px; padding:12px 10px; }
   .gauge-top { display:flex; align-items:baseline; justify-content:center; gap:8px; flex-wrap:wrap; }
   .gauge-icon { font-size:30px; }
   .icon-img { width:30px; height:30px; object-fit:contain; vertical-align:-6px; transform:scale(2); transform-origin:right center; }
@@ -1932,7 +2243,7 @@ v0.50
   .bar { height:5px; background:#2A1A1A; border-radius:3px; margin-top:8px; overflow:hidden; }
   .bar-fill { height:100%; border-radius:3px; }
   .energy-row { display:flex; align-items:center; gap:6px; margin-top:10px; font-size:12px; }
-  .mini-gauge { background:#161010; border:1px solid #2A1A1A; border-radius:12px; padding:12px 10px; display:flex; align-items:baseline; justify-content:center; gap:8px; font-size:12px; box-sizing:border-box; width:100%; flex-wrap:wrap; }
+  .mini-gauge { background:rgba(22,16,16,0.42);backdrop-filter:blur(4px) saturate(1.2);-webkit-backdrop-filter:blur(4px) saturate(1.2); border:1px solid #2A1A1A; border-radius:12px; padding:12px 10px; display:flex; align-items:baseline; justify-content:center; gap:8px; font-size:12px; box-sizing:border-box; width:100%; flex-wrap:wrap; }
   .mini-gauge .val { font-family:'Cinzel',serif; font-weight:700; font-size:18px; }
   .mini-gauge .sub { font-size:10px; color:#5A4A3A; }
 
@@ -1941,7 +2252,7 @@ v0.50
   }
   .hgc-tile {
     flex:1 1 28%; display:flex; align-items:center; justify-content:center; gap:5px;
-    background:#161010; border:1px solid #2A1A1A; border-radius:8px; padding:5px 4px;
+    background:rgba(22,16,16,0.42);backdrop-filter:blur(4px) saturate(1.2);-webkit-backdrop-filter:blur(4px) saturate(1.2); border:1px solid #2A1A1A; border-radius:8px; padding:5px 4px;
   }
   .hgc-icon { font-size:14px; }
   .hgc-icon-img { width:14px; height:14px; object-fit:contain; vertical-align:-2px; transform:scale(2); transform-origin:right center; }
@@ -1952,7 +2263,7 @@ v0.50
   }
   .resource-modal-overlay.open { display:flex; align-items:center; justify-content:center; padding:16px; }
   .resource-modal-sheet {
-    background:#161010; border:1px solid rgba(212,175,55,0.3); border-radius:16px;
+    background:rgba(22,16,16,0.42);backdrop-filter:blur(4px) saturate(1.2);-webkit-backdrop-filter:blur(4px) saturate(1.2); border:1px solid rgba(212,175,55,0.3); border-radius:16px;
     padding:16px; width:100%; max-width:480px; max-height:85vh; overflow-y:auto;
   }
   .resource-modal-title {
@@ -1977,7 +2288,7 @@ v0.50
     display:none; flex-direction:column; gap:2px;
     position:absolute; top:calc(100% + 8px); right:0; z-index:40;
     min-width:190px; padding:6px; border-radius:10px;
-    background:#161010; border:1px solid rgba(212,175,55,0.3);
+    background:rgba(22,16,16,0.42);backdrop-filter:blur(4px) saturate(1.2);-webkit-backdrop-filter:blur(4px) saturate(1.2); border:1px solid rgba(212,175,55,0.3);
     box-shadow:0 8px 24px rgba(0,0,0,0.5);
   }
   .settings-menu.open { display:flex; }
@@ -1991,11 +2302,11 @@ v0.50
 
   .buildq {
     margin:16px 16px 0; padding:12px; border-radius:12px;
-    border:1px solid rgba(212,175,55,0.3); background:#161010;
+    border:1px solid rgba(212,175,55,0.3); background:rgba(22,16,16,0.42);backdrop-filter:blur(4px) saturate(1.2);-webkit-backdrop-filter:blur(4px) saturate(1.2);
     display:flex; align-items:center; gap:14px;
   }
   .dial { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .dial-inner { width:40px; height:40px; border-radius:50%; background:#161010; display:flex; align-items:center; justify-content:center; font-size:10px; }
+  .dial-inner { width:40px; height:40px; border-radius:50%; background:rgba(22,16,16,0.42);backdrop-filter:blur(4px) saturate(1.2);-webkit-backdrop-filter:blur(4px) saturate(1.2); display:flex; align-items:center; justify-content:center; font-size:10px; }
   .buildq .name { font-size:13px; font-weight:600; margin-top:2px; }
   .buildq .lbl { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:#8A7A6A; }
 
@@ -2007,7 +2318,8 @@ v0.50
 
   .trader-banner {
     margin:10px 16px 0; padding:12px; border-radius:10px;
-    border:1px solid rgba(127,168,90,0.4); background:#101710;
+    border:1px solid rgba(127,168,90,0.4); background:rgba(16,23,16,0.55);
+    backdrop-filter:blur(3px) saturate(1.15); -webkit-backdrop-filter:blur(3px) saturate(1.15);
     font-size:11px; color:#7FA85A;
   }
   .trader-banner .trow { display:flex; justify-content:space-between; align-items:center; gap:8px; }
@@ -2057,7 +2369,13 @@ v0.50
   }
   .ring-repair-toggle-btn:hover { background:rgba(10,10,10,0.92); }
   @keyframes ringRepairPulse { 0%,100% { box-shadow:0 0 0 0 rgba(212,175,55,0.45); } 50% { box-shadow:0 0 0 6px rgba(212,175,55,0); } }
-  .card { border:1px solid #2B1E19; background:#181310; border-radius:12px; padding:12px; }
+  .planet-destroy-toggle-btn {
+    position:absolute; top:10px; left:10px; z-index:2; width:32px; height:32px; border-radius:50%;
+    border:1px solid #C4402E; background:rgba(10,10,10,0.72); color:#C4402E; font-size:15px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .planet-destroy-toggle-btn:hover { background:rgba(70,10,10,0.85); }
+  .card { border:1px solid #2B1E19; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15); border-radius:12px; padding:12px; }
   /* 🔆 Dyson-Sphäre — Phase 10: eingebettete 3D-Ansicht (Bild-im-Bild) auf der Dyson-Seite. Der
      .dyson-pip-wrap-Platzhalter dient nur der Größen-/Positionsbestimmung für den permanent an
      <body> hängenden iframe (siehe positionDysonPip()) — er selbst zeigt nie Inhalt an.
@@ -2105,7 +2423,8 @@ v0.50
   details[open] > .story-chapter-summary::after { transform:rotate(90deg); }
   button.upg {
     font-size:11px; padding:7px 12px; border-radius:8px; cursor:pointer;
-    background:transparent; border:1px solid #D4AF37; color:#D4AF37;
+    background:rgba(212,175,55,0.12); backdrop-filter:blur(3px) saturate(1.15); -webkit-backdrop-filter:blur(3px) saturate(1.15);
+    border:1px solid #D4AF37; color:#D4AF37;
     transition: all .15s;
   }
   button.upg:hover:not(:disabled) { background:#D4AF37; color:#0A0A0A; }
@@ -2118,12 +2437,12 @@ v0.50
   .list.tile-grid > .planet-hero { grid-column: 1 / -1; }
   .tile {
     position:relative; text-align:left; font-family:inherit; color:#EDE4D3;
-    border:1px solid #2B1E19; background:#181310; border-radius:12px; padding:10px 10px 8px;
+    border:1px solid #2B1E19; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15); border-radius:12px; padding:10px 10px 8px;
     display:flex; flex-direction:column; gap:3px; cursor:pointer; transition: border-color .15s, background .15s;
   }
   .tile:hover:not(:disabled) { border-color:#D4AF37; background:#1E1712; }
   .tile:disabled { cursor:not-allowed; opacity:.55; }
-  .tile:disabled:hover { border-color:#2B1E19; background:#181310; }
+  .tile:disabled:hover { border-color:#2B1E19; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15); }
   .tile-icon { font-size:19px; line-height:1; }
   .tile-name { font-size:12.5px; font-weight:600; margin-top:2px; line-height:1.2; }
   .tile-lvl { font-size:10.5px; color:#D4AF37; }
@@ -2151,15 +2470,15 @@ v0.50
   .list.tile-grid > .building-view,
   .list.tile-grid > .planet-hero { grid-column: 1 / -1; }
   .tile-build { cursor:default; }
-  .tile-build:hover { border-color:#2B1E19; background:#181310; }
+  .tile-build:hover { border-color:#2B1E19; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15); }
   .tile-foot { display:flex; align-items:center; gap:6px; margin-top:auto; padding-top:6px; }
   .tile-foot .count-input { width:40px; padding:5px 2px; font-size:11px; flex-shrink:0; }
   .tile-foot button.upg { flex:1; font-size:10px; padding:6px 4px; }
 
   /* Gebäude-Detailansicht (Bau-Bildschirm): großes Hintergrundbild + Infos + Ausbauen-Button,
      darunter eine Kachel-Leiste zum Umschalten zwischen den Gebäuden. */
-  .building-view { gap:8px; max-width:480px; margin:0 auto; width:100%; }
-  .building-detail { border:1px solid #2B1E19; background:#181310; border-radius:14px; overflow:hidden; position:relative; }
+  .building-view { gap:8px; max-width:var(--app-max-width); margin:0 auto; width:100%; }
+  .building-detail { border:1px solid #2B1E19; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15); border-radius:14px; overflow:hidden; position:relative; }
   .market-item-hero {
     position:relative; border-radius:14px 14px 0 0; overflow:hidden; aspect-ratio:16/10;
     background:linear-gradient(135deg,#221515,#161010);
@@ -2200,7 +2519,7 @@ v0.50
   .building-thumb-strip { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
   .building-thumb, .ship-thumb, .defense-thumb, .research-thumb, .market-item-thumb,
   .moon-building-thumb, .moon-ship-thumb, .moon-defense-thumb, .lifeform-building-thumb, .lifeform-tech-thumb {
-    position:relative; overflow:hidden; font-family:inherit; color:#EDE4D3; border:1px solid #2B1E19; background:#181310;
+    position:relative; overflow:hidden; font-family:inherit; color:#EDE4D3; border:1px solid #2B1E19; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15);
     border-radius:12px; padding:10px 6px 8px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:2px;
     cursor:pointer; transition: border-color .15s, background .15s; min-height:132px;
   }
@@ -2219,8 +2538,10 @@ v0.50
   .building-thumb-lvl { position:relative; z-index:1; font-size:13px; font-weight:700; color:#D4AF37; text-shadow:0 1px 3px rgba(0,0,0,0.9); }
 
   /* Planet-Gebäude-Kacheln: Ausgrauen (fehlende Ressourcen/Voraussetzungen/belegte Bauschlange) */
-  .building-thumb.thumb-locked { opacity:0.42; filter:grayscale(55%); }
-  .building-thumb.thumb-locked:hover { border-color:#2B1E19; background:#181310; }
+  .building-thumb.thumb-locked, .research-thumb.thumb-locked, .moon-building-thumb.thumb-locked, .lifeform-building-thumb.thumb-locked {
+    opacity:0.42; filter:grayscale(55%);
+  }
+  .building-thumb.thumb-locked:hover, .research-thumb.thumb-locked:hover, .moon-building-thumb.thumb-locked:hover, .lifeform-building-thumb.thumb-locked:hover { border-color:#2B1E19; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15); }
   .thumb-lock-badge { position:absolute; top:6px; right:6px; z-index:2; font-size:12px; line-height:1; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.9)); }
   /* Laufender goldener Baubalken direkt auf der Kachel des aktuell gebauten Gebäudes */
   .building-thumb.thumb-building { border-color:#D4AF37; }
@@ -2252,7 +2573,7 @@ v0.50
   /* Flotten-/Verteidigungs-Übersicht: Icon-Kacheln (Bild-bereit, Fallback aufs Emoji) statt reiner Textliste */
   .fleet-thumb-strip { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
   .fleet-thumb {
-    position:relative; overflow:hidden; border:1px solid #2B1E19; background:#181310; border-radius:12px;
+    position:relative; overflow:hidden; border:1px solid #2B1E19; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15); border-radius:12px;
     padding:8px 6px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:2px; min-height:92px;
   }
   .fleet-thumb::after {
@@ -2290,18 +2611,23 @@ v0.50
   .activity-preview-more:hover { text-decoration:underline; }
   .planet-row {
     display:flex; align-items:center; justify-content:space-between; gap:8px;
-    border:1px solid #2B1E19; background:#181310; border-radius:10px; padding:10px 12px; margin-bottom:6px;
+    border:1px solid #2B1E19; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15); border-radius:10px; padding:10px 12px; margin-bottom:6px;
     scroll-margin-top:14px;
   }
   .planet-row.selected { border-color:#D4AF37; box-shadow:0 0 0 1px rgba(212,175,55,0.35); }
-  .system-orbit-wrap { width:100%; max-width:360px; margin:0 auto 14px; }
+  .system-orbit-wrap {
+    width:100%; max-width:360px; margin:0 auto 14px; border-radius:16px; overflow:hidden;
+    background:rgba(24,19,16,0.3); backdrop-filter:blur(3px) saturate(1.15); -webkit-backdrop-filter:blur(3px) saturate(1.15);
+  }
   .system-orbit-wrap svg { width:100%; height:auto; display:block; touch-action:manipulation; }
   .orbit-node { cursor:pointer; }
   .orbit-node:active circle.orbit-node-hit { fill:rgba(212,175,55,0.12); }
   #galaxyDetailsList { margin-top:2px; }
   .galaxy-details-toggle {
     list-style:none; cursor:pointer; text-align:center; font-size:11px; padding:9px 12px;
-    border:1px solid #D4AF37; border-radius:8px; color:#D4AF37; background:transparent; user-select:none;
+    border:1px solid #D4AF37; border-radius:8px; color:#D4AF37;
+    background:rgba(212,175,55,0.12); backdrop-filter:blur(3px) saturate(1.15); -webkit-backdrop-filter:blur(3px) saturate(1.15);
+    user-select:none;
   }
   .galaxy-details-toggle::-webkit-details-marker { display:none; }
   .galaxy-details-toggle:hover { background:rgba(212,175,55,0.08); }
@@ -2315,14 +2641,15 @@ v0.50
   .tag.transit { background:#251612; color:#C4402E; border:1px solid #4A2020; }
   button.small-btn {
     font-size:10px; padding:6px 10px; border-radius:8px; cursor:pointer;
-    background:transparent; border:1px solid #D4AF37; color:#D4AF37; white-space:nowrap;
+    background:rgba(212,175,55,0.12); backdrop-filter:blur(3px) saturate(1.15); -webkit-backdrop-filter:blur(3px) saturate(1.15);
+    border:1px solid #D4AF37; color:#D4AF37; white-space:nowrap;
   }
   button.small-btn:hover:not(:disabled) { background:#D4AF37; color:#0A0A0A; }
   button.small-btn:disabled { border-color:#2A1A1A; color:#4A3A3A; cursor:not-allowed; }
   .tt-lane-label { font-family:'Cinzel',serif; font-size:11px; letter-spacing:0.5px; }
 
   .count-input {
-    width:56px; background:#161010; border:1px solid #2A1A1A; color:#EDE4D3;
+    width:56px; background:rgba(22,16,16,0.42);backdrop-filter:blur(4px) saturate(1.2);-webkit-backdrop-filter:blur(4px) saturate(1.2); border:1px solid #2A1A1A; color:#EDE4D3;
     border-radius:6px; padding:6px; font-family:'IBM Plex Mono',monospace; font-size:12px; text-align:center;
   }
 
@@ -2355,7 +2682,7 @@ v0.50
   .galaxy-nav-btn { font-size:14px; padding:8px 14px; }
   .galaxy-jump { display:flex; gap:8px; margin-bottom:16px; }
   .galaxy-jump-input {
-    flex:1; background:#161010; border:1px solid #2A1A1A; color:#EDE4D3;
+    flex:1; background:rgba(22,16,16,0.42);backdrop-filter:blur(4px) saturate(1.2);-webkit-backdrop-filter:blur(4px) saturate(1.2); border:1px solid #2A1A1A; color:#EDE4D3;
     border-radius:6px; padding:8px; font-family:'IBM Plex Mono',monospace; font-size:13px; text-align:center;
   }
 
@@ -2367,13 +2694,13 @@ v0.50
 
   .rank-row {
     display:flex; align-items:center; gap:8px; padding:8px 12px;
-    border:1px solid #2B1E19; background:#181310; border-radius:8px; margin-bottom:6px; font-size:12px;
+    border:1px solid #2B1E19; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15); border-radius:8px; margin-bottom:6px; font-size:12px;
   }
   .rank-row.me { border-color:#D4AF37; background:#221A10; }
   .rank-row .rpos { width:24px; color:#8A7A6A; font-size:11px; flex-shrink:0; }
 
   .officer-card, .ach-card {
-    border:1px solid #2B1E19; background:#181310; border-radius:12px; padding:12px; margin-bottom:10px;
+    border:1px solid #2B1E19; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15); border-radius:12px; padding:12px; margin-bottom:10px;
   }
   .officer-card.owned { border-color:rgba(127,168,90,0.4); }
   .ach-card.unlocked { border-color:rgba(212,175,55,0.5); }
@@ -2383,7 +2710,7 @@ v0.50
   .market-rates { display:flex; flex-direction:column; gap:6px; margin-bottom:4px; }
   .market-rate-row {
     display:flex; align-items:center; justify-content:space-between; padding:8px 12px;
-    border:1px solid #2B1E19; background:#181310; border-radius:8px; font-size:12px;
+    border:1px solid #2B1E19; background:rgba(24,19,16,0.3);backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15); border-radius:8px; font-size:12px;
   }
   .market-rate-row .delta { font-size:10px; }
   .market-pick { display:flex; gap:6px; margin-top:8px; }
@@ -2434,7 +2761,7 @@ v0.50
   .menu-btn {
     font-family:'IBM Plex Mono', monospace; font-size:13px; letter-spacing:1px;
     padding:14px 18px; border-radius:10px; cursor:pointer; text-transform:uppercase;
-    border:1px solid rgba(212,175,55,0.35); background:#161010; color:#EDE4D3;
+    border:1px solid rgba(212,175,55,0.35); background:rgba(22,16,16,0.42);backdrop-filter:blur(4px) saturate(1.2);-webkit-backdrop-filter:blur(4px) saturate(1.2); color:#EDE4D3;
     transition: border-color .15s, background .15s;
   }
   .menu-btn:hover { border-color:#D4AF37; background:#221A10; }
@@ -2452,11 +2779,12 @@ v0.50
 </style>
 </head>
 <body>
+  <canvas id="bgStarfield" aria-hidden="true"></canvas>
   <div class="title-screen" id="startGate">
     <canvas class="warp-canvas" id="warpGate"></canvas>
     <div class="game-logo" id="logoGate"></div>
     <div class="tap-hint" id="startGateBtn">Berühren zum Start</div>
-    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.24</div>
+    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.54</div>
   </div>
 
   <div class="title-screen hidden" id="titleScreen">
@@ -2468,12 +2796,12 @@ v0.50
       <button class="menu-btn" id="newGameBtn">Neues Spiel</button>
     </div>
     <div class="save-info" id="saveInfo"></div>
-    <button id="titleMusicToggleBtn" title="Musik-Einstellungen" style="position:absolute;bottom:38px;right:14px;width:32px;height:32px;border-radius:50%;background:#161010;border:1px solid rgba(212,175,55,0.35);color:#EDE4D3;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:6"><span style="filter:grayscale(1) brightness(0) invert(21%) sepia(89%) saturate(7466%) hue-rotate(357deg) brightness(90%) contrast(119%)">🎵</span></button>
-    <div id="titleMusicPopover" style="display:none;position:absolute;bottom:76px;right:14px;background:#161010;border:1px solid rgba(212,175,55,0.35);border-radius:10px;padding:10px 12px;z-index:6;text-align:center">
+    <button id="titleMusicToggleBtn" title="Musik-Einstellungen" style="position:absolute;bottom:38px;right:14px;width:32px;height:32px;border-radius:50%;background:rgba(22,16,16,0.42);backdrop-filter:blur(4px) saturate(1.2);-webkit-backdrop-filter:blur(4px) saturate(1.2);border:1px solid rgba(212,175,55,0.35);color:#EDE4D3;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:6"><span style="filter:grayscale(1) brightness(0) invert(21%) sepia(89%) saturate(7466%) hue-rotate(357deg) brightness(90%) contrast(119%)">🎵</span></button>
+    <div id="titleMusicPopover" style="display:none;position:absolute;bottom:76px;right:14px;background:rgba(22,16,16,0.42);backdrop-filter:blur(4px) saturate(1.2);-webkit-backdrop-filter:blur(4px) saturate(1.2);border:1px solid rgba(212,175,55,0.35);border-radius:10px;padding:10px 12px;z-index:6;text-align:center">
       <button class="menu-btn" id="titleMusicBtn" style="font-size:11px;width:100%">🎵 Musik</button>
       <input type="range" class="music-volume-input" id="titleMusicVolume" min="0" max="1" step="0.05" style="width:130px;margin-top:8px;accent-color:#D4AF37;display:block">
     </div>
-    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.24</div>
+    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.54</div>
   </div>
   <div class="header">
     <div class="title-row">
@@ -2523,6 +2851,16 @@ v0.50
     </div>
   </div>
 
+  <div class="resource-modal-overlay" id="destroyPlanetModalOverlay">
+    <div class="resource-modal-sheet" id="destroyPlanetModalSheet" style="max-width:420px">
+      <div class="resource-modal-title">
+        <span>💥 Planet vernichten</span>
+        <button id="destroyPlanetModalCloseBtn">✕</button>
+      </div>
+      <div id="destroyPlanetModalBody"></div>
+    </div>
+  </div>
+
 
   <div id="autopilotBannerBox"></div>
   <div id="traderBannerBox"></div>
@@ -2544,7 +2882,7 @@ v0.50
       <div class="tab" id="tabLifeforms"><span class="tab-icon"><img src="bilder/icons/navLebensformen/navLebensformen_1.png" class="tab-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🧬</span></span><span class="tab-label">Genlinien</span></div>
       <div class="tab" id="tabResearch"><span class="tab-icon"><img src="bilder/icons/navForschung/navForschung_1.png" class="tab-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🔬</span></span><span class="tab-label">Forschung</span></div>
       <div class="tab" id="tabMoon"><span class="tab-icon"><img src="bilder/monde/natuerlich/natuerlich_1.png" class="tab-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🌕</span></span><span class="tab-label">Mond</span></div>
-      <div class="tab" id="tabDyson"><span class="tab-icon"><span>🔆</span></span><span class="tab-label">Dyson-Sphäre</span></div>
+      <div class="tab" id="tabDyson"><span class="tab-icon"><img src="bilder/icons/navDyson/navDyson_1.png" class="tab-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🔆</span></span><span class="tab-label">Dyson-Sphäre</span></div>
       <div class="tab" id="tabMarket"><span class="tab-icon"><img src="bilder/icons/navMarkt/navMarkt_1.png" class="tab-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">💱</span></span><span class="tab-label">Markt</span></div>
       <div class="tab" id="tabRank"><span class="tab-icon"><img src="bilder/icons/navOffiziersLounge/navOffiziersLounge_1.png" class="tab-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">🎖️</span></span><span class="tab-label">Offiziers Lounge</span></div>
       <div class="tab" id="tabActivity"><span class="tab-icon"><img src="bilder/icons/navBerichte/navBerichte_1.png" class="tab-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">📋</span></span><span class="tab-label">Berichte</span></div>
@@ -3792,6 +4130,16 @@ function lifeformBuildingImgSrc(key) {
 // Bildpfad für Genlinie-Technologien: bilder/lebensformtech/<key>/<key>_1.png
 function lifeformTechImgSrc(key) {
   return `bilder/lebensformtech/${key}/${key}_1.png`;
+}
+// Bildpfad für Offiziers-Lounge-Portraits: bilder/offiziere/<key>/<key>_1.png — gleiches Fallback-
+// Prinzip wie überall sonst (fällt lautlos aufs Offiziers-Emoji zurück, falls die Datei noch fehlt).
+function officerImgSrc(key) {
+  return `bilder/offiziere/${key}/${key}_1.png`;
+}
+// Bildpfad für Genlinie-Spezies-Portraits: bilder/lebensform/<key>/<key>_1.png — gleiches Fallback-
+// Prinzip wie überall sonst (fällt lautlos aufs Spezies-Emoji zurück, falls die Datei noch fehlt).
+function speciesImgSrc(key) {
+  return `bilder/lebensform/${key}/${key}_1.png`;
 }
 // Generische bild-bereite Icon-Box (44×44, fällt automatisch aufs Emoji zurück) — Ersatz für nackte
 // <span class="icon"> überall dort, wo (noch) kein größeres Hero-Bild sinnvoll ist (Listen-Zeilen).
@@ -6429,7 +6777,7 @@ let CURRENT_SAVE_KEY = saveKeyForProfile(activeProfileId);
    muss dafür nichts gespeichert werden — wechselt einfach von selbst, sobald die reale Woche umspringt.
    Neue Profile dürfen trotzdem JEDEN Slot als Heimatwelt bekommen (pickFreeHomeCoords prüft das
    bewusst nicht) — nur echte Kolonisierung späterer Profile wird dadurch verknappt. */
-const UNKNOWN_EMPIRE_BLOCK_RATIO = 0.80; // Anteil der unbesiedelten Slots pro Woche geblockt — hier zum Nachjustieren einfach runterdrehen
+const UNKNOWN_EMPIRE_BLOCK_RATIO = 0.60; // Anteil der unbesiedelten Slots pro Woche geblockt — hier zum Nachjustieren einfach runterdrehen
 const UNKNOWN_EMPIRE_ROTATION_MS = 7 * 24 * 60 * 60 * 1000; // exakt 7 Realzeit-Tage
 
 // Simpler, deterministischer String-Hash -> Zahl zwischen 0 und 1 (dieselbe Eingabe liefert IMMER
@@ -7253,6 +7601,69 @@ function renderColonizeModal() {
       colonizeModalTarget = null;
       sfx.click();
     }
+  });
+}
+
+// Popup "Planet vernichten" — öffnet sich über den roten 💥-Knopf oben im Planetenbild (planet-hero).
+// Zeigt exakt dieselbe Karte wie zuvor unten auf der Planetenseite (renderLeavePlanetCard), nur jetzt
+// in einem eigenen Fenster statt permanent eingeblendet. Buttons werden bewusst NICHT über den
+// generischen document.querySelectorAll-Block im sekündlichen render()-Tick verkabelt (das würde bei
+// jedem Tick einen weiteren Klick-Listener auf denselben, hier persistenten DOM-Knoten stapeln —
+// anders als bei #mainView, das jeden Tick komplett neu aufgebaut wird). Stattdessen eigene, in sich
+// geschlossene Listener-Vergabe hier, nach dem Vorbild von renderColonizeModal().
+function openDestroyPlanetModal(pid) {
+  destroyPlanetModalTarget = pid;
+  renderDestroyPlanetModalBody();
+  const overlay = document.getElementById("destroyPlanetModalOverlay");
+  if (overlay) overlay.classList.add("open");
+}
+
+function closeDestroyPlanetModal() {
+  const overlay = document.getElementById("destroyPlanetModalOverlay");
+  if (overlay) overlay.classList.remove("open");
+  destroyPlanetModalTarget = null;
+}
+
+function renderDestroyPlanetModalBody() {
+  const body = document.getElementById("destroyPlanetModalBody");
+  const overlay = document.getElementById("destroyPlanetModalOverlay");
+  if (!body || !overlay || !overlay.classList.contains("open") || !destroyPlanetModalTarget) return;
+  const p = planets[destroyPlanetModalTarget];
+  if (!p) { closeDestroyPlanetModal(); return; }
+
+  body.innerHTML = renderLeavePlanetCard(p) || `<div class="bmeta" style="text-align:center">Für diesen Planeten nicht verfügbar.</div>`;
+
+  body.querySelectorAll("button.leave-planet-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const pl = planets[btn.dataset.key];
+      if (!pl) return;
+      showConfirmDialog({
+        icon: "🚪",
+        title: `${pl.name} verlassen?`,
+        text: `Flotte, Verteidigung${pl.moon || pl.moon2 ? " und Mond" : ""} auf diesem Planeten gehen dabei verloren. Das kann nicht rückgängig gemacht werden.`,
+        okLabel: "Verlassen",
+        danger: true
+      }).then(ok => {
+        if (ok) { leavePlanet(pl); closeDestroyPlanetModal(); }
+      });
+    });
+  });
+
+  body.querySelectorAll("button.destroy-planet-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const pl = planets[btn.dataset.key];
+      if (!pl) return;
+      const cost = planetDestructionCost(pl);
+      showConfirmDialog({
+        icon: "💥",
+        title: `${pl.name} vernichten?`,
+        text: `Kosten: ${fmt(cost.dm)} 🌌 Dunkle Materie + ${fmt(cost.aetherium)} ✨ Ätherium. Nach ${fmtTime(cost.seconds)} Wartezeit wird der Planet endgültig aufgegeben — Flotte, Verteidigung${pl.moon || pl.moon2 ? " und Mond" : ""} gehen dabei verloren. Das kann nicht rückgängig gemacht werden.`,
+        okLabel: "Vernichten",
+        danger: true
+      }).then(ok => {
+        if (ok) { buyPlanetDestruction(pl); renderDestroyPlanetModalBody(); } // Karte sofort aktualisieren -> zeigt direkt den "Vernichtung läuft"-Countdown
+      });
+    });
   });
 }
 
@@ -8151,6 +8562,16 @@ function startResearch(r) {
   if (researchQueue) return;
   const lab = maxLabLevel();
   if (lab <= 0) return;
+  // v0.53.44: Bugfix (Feedback "Intergalaktisches Forschungsnetzwerk lässt sich erforschen, obwohl
+  // die Voraussetzungen nicht erfüllt sind"). Ursache: startConstruction/startShipBuild/
+  // startDefenseBuild prüfen alle korrekt `meetsRequirement()`, bevor sie starten — hier fehlte diese
+  // Zeile komplett. Die Erforschen-Buttons in der Detailansicht sind zwar korrekt per `disabled`
+  // gesperrt, aber der kurze Tap auf eine gesperrte Kachel im Forschungs-Streifen (research-thumb,
+  // siehe pointerup-Handler) ruft startResearch() direkt auf, OHNE das zu prüfen — betraf dadurch
+  // JEDE Forschung mit `requires`/`requiresBuildings` (aktuell: networkTech, plasmaTech, aiTech u.a.),
+  // nicht nur das Forschungsnetzwerk. Diese Prüfung ist jetzt die eine gemeinsame, verlässliche Stelle,
+  // unabhängig davon, über welchen UI-Pfad startResearch() aufgerufen wird.
+  if (!meetsRequirement(r, planets[activePlanetId])) return;
   const lvl = research[r.key] || 0;
   if (r.maxLevel && lvl >= r.maxLevel) return;
   if (lab < lvl + 1) return; // Labor muss mindestens so hoch sein wie die anzustrebende Forschungsstufe
@@ -9316,6 +9737,7 @@ let colonizeModalCargo = { smallCargo: 0, largeCargo: 0 }; // im Popup gewählte
 let planetBuildingDetail = null;  // aktuell ausgewählter Gebäude-Key in der Bau-Detailansicht — bleibt über den Render-Tick erhalten
 let planetBuildingDetailOpen = false; // Detail-/Hero-Panel ist standardmäßig eingeklappt, öffnet sich nur durch langes Halten einer Kachel
 let ringRepairPanelOpen = false; // Ringwelt-Reparatur-Fenster ist standardmäßig versteckt, öffnet sich über den Knopf im Planetenbild
+let destroyPlanetModalTarget = null; // Planeten-ID, für die das "Planet vernichten"-Popup gerade offen ist (öffnet sich über den roten Knopf im Planetenbild)
 let buildingInfoOpen = null;      // Gebäude-Key, dessen "Nächste 10 Stufen"-Infofenster (📘) gerade offen ist
 let shipyardShipDetail = null;    // aktuell ausgewähltes Schiff in der Werft-Detailansicht — bleibt über den Render-Tick erhalten
 let shipyardDetailOpen = false;   // Detail-/Hero-Panel (Schiffe) ist standardmäßig eingeklappt, öffnet sich nur durch langes Halten einer Kachel
@@ -9353,7 +9775,7 @@ function renderHeader() {
   if (apBannerBox) {
     if (autopilotOn && autopilotAvailable()) {
       const fuelPaused = !autopilotFuelActive();
-      apBannerBox.innerHTML = `<div style="background:${fuelPaused ? "rgba(255,165,0,0.15)" : "rgba(255,59,48,0.15)"};border:1px solid ${fuelPaused ? "rgba(255,165,0,0.6)" : "rgba(255,59,48,0.6)"};border-radius:8px;padding:6px 12px;margin:6px 10px;font-size:12px;text-align:center;color:${fuelPaused ? "#FFA500" : "#FF3B30"}">
+      apBannerBox.innerHTML = `<div style="background:${fuelPaused ? "rgba(255,165,0,0.15)" : "rgba(255,59,48,0.15)"};backdrop-filter:blur(3px) saturate(1.15);-webkit-backdrop-filter:blur(3px) saturate(1.15);border:1px solid ${fuelPaused ? "rgba(255,165,0,0.6)" : "rgba(255,59,48,0.6)"};border-radius:8px;padding:6px 12px;margin:6px 10px;font-size:12px;text-align:center;color:${fuelPaused ? "#FFA500" : "#FF3B30"}">
         🤖 ${fuelPaused ? "Autopilot pausiert (kein Treibstoff)" : "Autopilot läuft — verteilt automatisch Rohstoffe/Bau/Forschung zwischen deinen Kolonien"}
       </div>`;
     } else {
@@ -10006,35 +10428,19 @@ function render() {
       if (input) input.value = input.max || 1;
     });
   });
-  // Abreißen-Button: siehe delegierten Klick-Handler auf #mainView weiter unten im Script
-  // (behebt Race-Condition mit dem sekündlichen Re-Render, siehe CHANGELOG v0.50_40)
-  document.querySelectorAll("button.leave-planet-btn").forEach(btn => {
+  // Die eigentlichen "Planet verlassen"/"Planet vernichten"-Buttons leben jetzt im Popup (siehe
+  // openDestroyPlanetModal()/renderDestroyPlanetModalBody()) und werden dort selbst verkabelt — nicht
+  // hier über document.querySelectorAll, da das Popup (anders als #mainView) NICHT jeden Sekunden-Tick
+  // neu aufgebaut wird und sich sonst bei jedem Tick ein weiterer Klick-Listener auf denselben,
+  // persistenten Button stapeln würde.
+  document.querySelectorAll("button.planet-destroy-toggle-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      const p = planets[btn.dataset.key];
-      if (!p) return;
-      showConfirmDialog({
-        icon: "🚪",
-        title: `${p.name} verlassen?`,
-        text: `Flotte, Verteidigung${p.moon || p.moon2 ? " und Mond" : ""} auf diesem Planeten gehen dabei verloren. Das kann nicht rückgängig gemacht werden.`,
-        okLabel: "Verlassen",
-        danger: true
-      }).then(ok => { if (ok) leavePlanet(p); });
+      sfx.click();
+      openDestroyPlanetModal(btn.dataset.key);
     });
   });
-  document.querySelectorAll("button.destroy-planet-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const p = planets[btn.dataset.key];
-      if (!p) return;
-      const cost = planetDestructionCost(p);
-      showConfirmDialog({
-        icon: "💥",
-        title: `${p.name} vernichten?`,
-        text: `Kosten: ${fmt(cost.dm)} 🌌 Dunkle Materie + ${fmt(cost.aetherium)} ✨ Ätherium. Nach ${fmtTime(cost.seconds)} Wartezeit wird der Planet endgültig aufgegeben — Flotte, Verteidigung${p.moon || p.moon2 ? " und Mond" : ""} gehen dabei verloren. Das kann nicht rückgängig gemacht werden.`,
-        okLabel: "Vernichten",
-        danger: true
-      }).then(ok => { if (ok) buyPlanetDestruction(p); });
-    });
-  });
+  // Falls das Popup gerade offen ist, Inhalt (Countdown etc.) mit jedem Sekunden-Tick aktualisieren.
+  renderDestroyPlanetModalBody();
   document.querySelectorAll("button.ring-repair-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const p = planets[btn.dataset.key];
@@ -11089,6 +11495,7 @@ function renderPlanetView(p) {
     : (ringIsFinalBonusStage ? "✨ Kern stabilisieren" : "🔧 In Reparatur");
   const hero = `<div class="planet-hero" data-icon="${p.icon}">
     <img src="${heroImg}" alt="${p.typeLabel}" onerror="${heroFallback}">
+    ${p.id !== planetId(HOME_SYSTEM, HOME_SLOT) ? `<button class="planet-destroy-toggle-btn" data-key="${p.id}" title="Planet vernichten / verlassen">💥</button>` : ""}
     ${ringNeedsRepair ? `<button class="ring-repair-toggle-btn" data-key="${p.id}" title="Ringwelt-Reparatur ${ringRepairPanelOpen ? "ausblenden" : "anzeigen"}">${ringRepairBadgeLabel}</button>` : ""}
     <div class="planet-hero-overlay">
       <div class="planet-hero-name" style="display:flex;align-items:flex-end;gap:8px">${planetThumb(p.img, p.icon, p.typeLabel, 50)} ${p.name}${p.moon ? " " + moonSlotIconHtml(p,"moon",34) : ""}${p.moon2 ? " " + moonSlotIconHtml(p,"moon2",34) : ""}</div>
@@ -11230,9 +11637,7 @@ function renderPlanetView(p) {
     </button>`;
   }).join("") + `</div>`;
 
-  const leaveCard = renderLeavePlanetCard(p);
-
-  return `<div class="list building-view">` + hero + ringRepairCard + detail + thumbs + leaveCard + `</div>`;
+  return `<div class="list building-view">` + hero + ringRepairCard + detail + thumbs + `</div>`;
 }
 
 // Karte zur Ringwelt-Reparatur: zeigt den aktuellen Produktions-Malus, die Kosten für die nächste
@@ -11374,7 +11779,7 @@ function renderResearchView() {
     const affordable = active.resources.metal >= cost.metal && active.resources.crystal >= cost.crystal && active.resources.deuterium >= cost.deuterium;
     const maxedOut = r.maxLevel && lvl >= r.maxLevel;
     const labTooLow = lab < lvl + 1;
-    const reqOk = meetsRequirement(r);
+    const reqOk = meetsRequirement(r, active);
     const locked = !!researchQueue || lab <= 0 || maxedOut || labTooLow || !reqOk;
     const btnTitle = !reqOk ? "Benötigt " + reqLabel(r) : maxedOut ? "Maximalstufe erreicht" : !!researchQueue ? "Bereits eine Forschung aktiv" : labTooLow ? `Benötigt Labor Stufe ${lvl+1}` : !affordable ? "Nicht genug Rohstoffe" : "Erforschen";
     const prodLine = !reqOk ? `Benötigt ${reqLabel(r)}` : labTooLow && !maxedOut ? `Benötigt Labor Stufe ${lvl+1} (aktuell ${lab})` : maxedOut ? "Maximalstufe erreicht" : r.effectLabel(lvl);
@@ -11402,7 +11807,7 @@ function renderResearchView() {
       if (!catResearches.length) return "";
       return `<div class="bname" style="padding:10px 4px 4px">${cat.label}</div><div class="building-thumb-strip">` + catResearches.map(x => {
         const xlvl = research[x.key] || 0;
-        const xReqOk = meetsRequirement(x);
+        const xReqOk = meetsRequirement(x, active);
         const xMaxed = x.maxLevel && xlvl >= x.maxLevel;
         const xLabTooLow = lab < xlvl + 1;
         const xBuilding = researchQueue && researchQueue.key === x.key ? researchQueue : null;
@@ -11674,6 +12079,10 @@ function renderShipyardView() {
   // TODO-Vorgabe zusätzlich nur die Bauteile anzeigen, deren requiredType zum Typ DIESES Planeten
   // passt (kein Grau-Anzeigen falscher Typen — für die gehört man auf einen anderen Planeten).
   if ((research.sphereTech || 0) >= 1) {
+    // v0.53.43: Panele-Zähler/3D-Ansicht/Sternenenergie-Rückversand NICHT hierher dupliziert — es gibt
+    // dafür bereits eine eigene, vollständigere Seite (renderDysonView(), erreichbar über das
+    // Mehr-Menü: Fortschrittsbalken mit Gesamtziel, Vollautomatik-Schalter, Rückversand, alles an
+    // einer Stelle). Die alte Mond-Sektion war ein reines Duplikat davon, siehe renderMoonView.
     html += `<div class="system-title" style="margin-top:18px">🔆 Dyson-Sphäre — Bauteile</div>`;
     const matchingParts = DYSON_PARTS.filter(part => part.requiredType === p.typeKey);
     if (yardLevel <= 0) {
@@ -12017,7 +12426,7 @@ function renderFleetView() {
       </summary>
       ${!pickablePlanets.length ? `<div style="text-align:center;color:#8A7A6A">Du brauchst mindestens einen weiteren Planeten oder Mond als Ziel.</div>` : `
       <div class="bmeta" style="margin-bottom:8px">Ziel:</div>
-      <button type="button" id="transportTargetPickerBtn" style="width:100%;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#161010;border:1px solid rgba(212,175,55,0.3);border-radius:8px;color:#EDE4D3;cursor:pointer;font-family:inherit;font-size:13px">
+      <button type="button" id="transportTargetPickerBtn" style="width:100%;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(22,16,16,0.42);backdrop-filter:blur(4px) saturate(1.2);-webkit-backdrop-filter:blur(4px) saturate(1.2);border:1px solid rgba(212,175,55,0.3);border-radius:8px;color:#EDE4D3;cursor:pointer;font-family:inherit;font-size:13px">
         <span>${targetPlanet ? `${targetIsSamePlanet ? "eigener Mond von " : ""}${targetPlanet.name} <span class="bmeta">(System ${targetPlanet.system})</span>` : "Ziel wählen"}</span>
         <span style="color:${GOLD}">Ändern ▾</span>
       </button>
@@ -13174,52 +13583,13 @@ function renderMoonView(p) {
       html += `<div class="building-view">` + defDetail + defThumbs + `</div>`;
     }
 
-    // 🔆 Dyson-Sphäre — Phase 3: Panel-Montage. Nur relevant, wenn Sphärentechnik erforscht ist -
-    // vorher bleibt der ganze Abschnitt unsichtbar (genau wie die Bauteile in der normalen Werft).
-    if ((research.sphereTech || 0) >= 1) {
-      html += `<div class="system-title" style="margin-top:18px">🔆 Dyson-Sphäre — Panel-Montage</div>`;
-      // 🔆 Dyson-Sphäre — Phase 5: Externe 3D-Ansicht. Gesamtfortschritt (nicht mond-, sondern
-      // profilweit über dysonState.panelsBuilt) + Knopf, der die separate dysonsphere.html in einem
-      // neuen Tab öffnet. Bewusst außerhalb des "nur auf künstlichen Monden"-Zweigs, da der
-      // Gesamtfortschritt unabhängig vom gerade angezeigten Mond ist.
-      html += `<div class="card" style="text-align:center">
-        <div class="bname" style="margin-bottom:8px">🔆 ${fmt(dysonState.panelsBuilt||0)} Panel${(dysonState.panelsBuilt||0)===1?"":"e"} bei der Sonne verbaut</div>
-        ${starEnergy > 0 ? `<div class="bmeta" style="margin-bottom:8px">🌟 ${fmt(starEnergy)} Sternenenergie im Lager der Heimatwelt</div>` : ""}
-        <button type="button" class="upg dyson-3d-view-btn" style="width:100%">🌌 3D-Ansicht öffnen</button>
-      </div>`;
-      // 🔆 Dyson-Sphäre — Phase 7: Echter Rückversand. Entweder eine Rückfracht ist gerade unterwegs
-      // (Fortschrittsbalken, analog zu den Kolonieschiffen) oder es liegt ungesendete Sternenenergie
-      // bereit (Button) - beides gleichzeitig kann nicht vorkommen (canLaunchDysonReturn prüft das).
-      if (dysonState.returnArrival) {
-        const total = dysonState.returnArrival - (dysonState.returnDeparted || dysonState.returnArrival);
-        const done = Date.now() - (dysonState.returnDeparted || Date.now());
-        const pct = total > 0 ? Math.min(100, Math.max(0, (done/total)*100)) : 100;
-        html += `<div class="card">
-          <div class="card-top">
-            <div class="bmeta">↩ 🌟 ${fmt(dysonState.shipmentAmount||0)} Sternenenergie unterwegs zur Heimatwelt</div>
-            <span style="font-size:12px;color:${GOLD}">⏱ ${fmtTime((dysonState.returnArrival-Date.now())/1000)}</span>
-          </div>
-          <div class="bar" style="margin-top:8px"><div class="bar-fill" style="width:${pct}%;background:${GOLD}"></div></div>
-        </div>`;
-      } else if ((dysonState.resourcesReady||0) > 0) {
-        html += `<div class="card" style="text-align:center">
-          <div class="bmeta" style="margin-bottom:8px">🌟 ${fmt(dysonState.resourcesReady||0)} Sternenenergie bei der Sonne gesammelt <span style="color:#8A7A6A">(wartet auf Rückversand)</span></div>
-          <button type="button" class="upg dyson-return-btn" style="width:100%">↩ Ladung zur Heimatwelt schicken</button>
-        </div>`;
-      }
-      // [v0.53.17 / Phase 13] Panel-Montage findet nicht mehr auf künstlichen Monden statt, sondern
-      // direkt in der Sonnenwerft (Bedienoberfläche in dysonsphere.html/3D-Ansicht). Alte, auf diesem
-      // Mond noch vorhandene Bestände wurden beim letzten Laden automatisch in die Sonnenwerft
-      // übernommen (siehe migrateMoonDysonToSonnenwerft) — dieser Abschnitt bleibt nur noch als Hinweis
-      // stehen, die zugehörigen Funktionen (startPanelAssembly & Co.) bleiben unangetastet im Code,
-      // werden aber von keiner UI mehr aufgerufen.
-      html += `<div class="card" style="text-align:center;color:#8A7A6A">
-        Bauteile werden seit der Sonnenwerft-Erweiterung nicht mehr auf künstlichen Monden zu Panelen
-        montiert. Schicke sie stattdessen direkt von der Werft eines Bauteil-Planeten aus zur
-        Sonnenwerft ("🔆 Bauteile zur Sonnenwerft schicken") und montiere sie dort — Bedienoberfläche
-        über "🌌 3D-Ansicht öffnen" oben.
-      </div>`;
-    }
+    // v0.53.43: Feedback "das müsste aus den Monden entfernt werden, da die Montage jetzt in der
+    // Sonnenwerft geschieht" — die gesamte "Dyson-Sphäre — Panel-Montage"-Sektion (Panele-Zähler,
+    // 3D-Ansicht-Knopf, Sternenenergie-Rückversand + der Hinweistext) war reines Altlast-Relikt aus der
+    // Zeit vor der Sonnenwerft (Phase 13) und stand hier nur noch, weil sie ursprünglich moon-gebunden
+    // war. dysonState/starEnergy sind aber längst profilweit (nicht mond-/planetengebunden) — die Sektion
+    // ist deshalb ganz auf die Planeten-Werftseite umgezogen (siehe renderPlanetView, nur Heimatwelt,
+    // direkt über "🔆 Dyson-Sphäre — Bauteile"). Auf Monden gibt's dazu jetzt nichts mehr zu sehen.
   }
 
   html += `</div>`;
@@ -13826,13 +14196,13 @@ function renderLifeformsView() {
       ${lockInfo.locked ? `<div class="bmeta" style="margin:2px 0 10px;color:#e0a030">🔒 Noch nicht verfügbar auf diesem Planeten: ${lockInfo.reason}</div>` : ``}
     </div>`;
     html += LIFEFORM_SPECIES.map(s => `<div class="officer-card"${lockInfo.locked ? ' style="opacity:.5"' : ''}>
+      <div class="market-item-hero img-fallback" data-icon="${s.icon}" style="margin:-12px -12px 10px;border-radius:12px 12px 0 0">
+        <img src="${speciesImgSrc(s.key)}" alt="${s.name}" onerror="this.style.display='none';this.parentElement.classList.add('img-fallback')">
+      </div>
       <div class="card-top">
-        <div class="card-left">
-          <span class="icon">${s.icon}</span>
-          <div>
-            <div class="bname">${s.name}</div>
-            <div class="bmeta">${s.desc}</div>
-          </div>
+        <div>
+          <div class="bname">${s.name}</div>
+          <div class="bmeta">${s.desc}</div>
         </div>
         <button class="small-btn lifeform-choose-btn" data-key="${s.key}"${lockInfo.locked ? ' disabled' : ''}>Ansiedeln</button>
       </div>
@@ -14059,18 +14429,18 @@ function renderLifeformsView() {
   } else {
     html += `<div class="bmeta" style="margin:2px 4px 8px">Umsiedlung auf eine andere Spezies. Alle Genlinie-Gebäude &amp; -Technologien auf diesem Planeten gehen dabei verloren, die Bevölkerung startet neu bei 100.${resettleBlocked ? " Erst möglich, sobald der laufende Gebäudebau fertig ist." : ""}</div>`;
     html += LIFEFORM_SPECIES.filter(s => s.key !== lf.species).map(s => `<div class="officer-card">
+      <div class="market-item-hero img-fallback" data-icon="${s.icon}" style="margin:-12px -12px 10px;border-radius:12px 12px 0 0">
+        <img src="${speciesImgSrc(s.key)}" alt="${s.name}" onerror="this.style.display='none';this.parentElement.classList.add('img-fallback')">
+      </div>
       <div class="card-top">
-        <div class="card-left">
-          <span class="icon">${s.icon}</span>
-          <div>
-            <div class="bname">${s.name}</div>
-            <div class="bmeta">${s.desc}</div>
-            <div class="bmeta" style="margin-top:2px">
-              <span class="${p.resources.metal < resettleCost.metal ? 'bad' : ''}">${resIcon("metal","⛏")} ${fmt(resettleCost.metal)}</span>
-              <span class="${p.resources.crystal < resettleCost.crystal ? 'bad' : ''}">${resIcon("crystal","◆")} ${fmt(resettleCost.crystal)}</span>
-              <span class="${p.resources.deuterium < resettleCost.deuterium ? 'bad' : ''}">${resIcon("deuterium","⬡")} ${fmt(resettleCost.deuterium)}</span>
-              <span>⏱ ${fmtTime(resettleSeconds)}</span>
-            </div>
+        <div>
+          <div class="bname">${s.name}</div>
+          <div class="bmeta">${s.desc}</div>
+          <div class="bmeta" style="margin-top:2px">
+            <span class="${p.resources.metal < resettleCost.metal ? 'bad' : ''}">${resIcon("metal","⛏")} ${fmt(resettleCost.metal)}</span>
+            <span class="${p.resources.crystal < resettleCost.crystal ? 'bad' : ''}">${resIcon("crystal","◆")} ${fmt(resettleCost.crystal)}</span>
+            <span class="${p.resources.deuterium < resettleCost.deuterium ? 'bad' : ''}">${resIcon("deuterium","⬡")} ${fmt(resettleCost.deuterium)}</span>
+            <span>⏱ ${fmtTime(resettleSeconds)}</span>
           </div>
         </div>
         <button class="small-btn lifeform-resettle-btn" data-key="${s.key}" ${resettleAffordable ? "" : "disabled"} title="${resettleBlocked ? "Gebäudebau läuft noch" : resettleAffordable ? "Umsiedeln" : "Nicht genug Rohstoffe"}">Umsiedeln</button>
@@ -14112,14 +14482,14 @@ function renderRankView() {
         const remaining = officerRemainingMs(o.key);
         const affordable = darkMatter >= o.cost;
         return `<div class="officer-card ${active_ ? "owned" : ""}">
+          <div class="market-item-hero img-fallback" data-icon="${o.icon}" style="margin:-12px -12px 10px;border-radius:12px 12px 0 0">
+            <img src="${officerImgSrc(o.key)}" alt="${o.name}" onerror="this.style.display='none';this.parentElement.classList.add('img-fallback')">
+          </div>
           <div class="card-top">
-            <div class="card-left">
-              <span class="icon">${o.icon}</span>
-              <div>
-                <div class="bname">${o.name}</div>
-                <div class="bmeta">${o.desc}</div>
-                ${active_ ? `<div class="bmeta" style="color:${GOLD}">⏱ Läuft noch ${fmtDaysHours(remaining/1000)}</div>` : ""}
-              </div>
+            <div>
+              <div class="bname">${o.name}</div>
+              <div class="bmeta">${o.desc}</div>
+              ${active_ ? `<div class="bmeta" style="color:${GOLD}">⏱ Läuft noch ${fmtDaysHours(remaining/1000)}</div>` : ""}
             </div>
             <button class="small-btn hire-officer-btn" data-key="${o.key}" ${affordable ? "" : "disabled"}>${active_ ? "Verlängern" : "Anheuern"}</button>
           </div>
@@ -14404,6 +14774,70 @@ function beginGame() {
   initStars();
   requestAnimationFrame(drawFrame);
   window.stopWarpTunnel = () => { running = false; };
+})();
+
+// v0.53.31: Persistentes Hintergrund-Sternfeld für die gesamte App (nicht nur Titelbildschirm).
+// Löst zwei Feedback-Punkte ab: die alten CSS-Tile-Sterne waren (a) im Raster sichtbar zu
+// regelmäßig und (b) laut Screenshot kaum sichtbar/zu dünn. Hier: echte Zufallsverteilung über
+// den kompletten Viewport (kein Kachel-Repeat), Sterndichte an die Bildschirmfläche gekoppelt,
+// dezentes Twinkle per Canvas statt CSS-Animation (günstiger bei vielen Sternen).
+(function initBackgroundStarfield() {
+  const canvas = document.getElementById("bgStarfield");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  let w = 0, h = 0, stars = [];
+
+  function starCount(width, height) {
+    // ~1 Stern pro 1400px² Fläche, mit Ober-/Untergrenze für sehr kleine/riesige Viewports
+    const raw = Math.round((width * height) / 1400);
+    return Math.max(260, Math.min(1600, raw));
+  }
+
+  function generateStars() {
+    const n = starCount(w, h);
+    stars = Array.from({ length: n }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r: 0.5 + Math.random() * 1.3,
+      baseAlpha: 0.25 + Math.random() * 0.75,
+      twinkle: Math.random() < 0.3,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.4 + Math.random() * 1.3,
+    }));
+  }
+
+  function resize() {
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = Math.max(1, Math.round(w * dpr));
+    canvas.height = Math.max(1, Math.round(h * dpr));
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    generateStars();
+  }
+
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resize, 200);
+  });
+
+  function draw(now) {
+    ctx.clearRect(0, 0, w, h);
+    for (const s of stars) {
+      const a = s.twinkle ? s.baseAlpha * (0.4 + 0.6 * Math.sin(now * 0.001 * s.speed + s.phase)) : s.baseAlpha;
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(255,255,255,${a.toFixed(3)})`;
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  resize();
+  draw(performance.now());
+  setInterval(() => draw(performance.now()), 150);
 })();
 
 (function initTitleScreen() {
@@ -14878,6 +15312,13 @@ document.getElementById("colonizeModalOverlay").addEventListener("click", (e) =>
     document.getElementById("colonizeModalOverlay").classList.remove("open");
     colonizeModalTarget = null;
   }
+});
+
+document.getElementById("destroyPlanetModalCloseBtn").addEventListener("click", () => {
+  closeDestroyPlanetModal();
+});
+document.getElementById("destroyPlanetModalOverlay").addEventListener("click", (e) => {
+  if (e.target.id === "destroyPlanetModalOverlay") closeDestroyPlanetModal();
 });
 
 document.getElementById("autopilotInfoBtn").addEventListener("click", () => {

@@ -3,6 +3,7 @@
 ============================================================
  AETHERIS — 🔆 Dyson-Sphäre — Phase 12: Externe/eingebettete 3D-Ansicht (reine Anzeige) + Rückversand-Anzeige
  + neues postMessage-Grundgerüst zur Sonnenwerft (siehe Abschnitt weiter unten, noch ohne UI)
+ v0.53.51: Bugfix Panel-Verteilung (sichtbare Spirallinie behoben, siehe Kommentar weiter unten)
 ============================================================
  Eigenständige Datei, liegt bewusst NEBEN der Hauptspiel-Datei (gleicher Ordner, gleiche Origin). Liest
  den Spielstand des zuletzt aktiven Profils direkt aus localStorage. Bis Phase 9 schrieb diese Seite
@@ -24,12 +25,15 @@
  `shipmentAmount`, siehe applyReturnState weiter unten) — der Start-Knopf dafür lebt im Hauptspiel
  (Mond-Werft/Dyson-Seite).
 
- Verteilung der Panele auf der Sphäre bewusst NICHT über die klassische Fibonacci-Formel mit fixem
- N (Gesamtzahl), sondern über eine inkrementelle, für JEDE Präfixlänge gleichmäßig verteilte Sequenz
- (goldener Winkel für die Länge + Weyl-/Golden-Ratio-Folge für die Breite) — jedes Panel bekommt so
- einen für immer festen Platz nach seiner Ankunftsreihenfolge, ältere Panele springen nie um, wenn
- neue dazukommen. Das bleibt auch nach der finalen TOTAL-Festlegung in Phase 8 so, weil es unabhängig
- von N funktioniert und obendrein robuster gegenüber späteren Änderungen ist.
+ BUGFIX v0.53.51 (Feedback: "die Module werden in einer Spirale/Spirallinie angeordnet"): Panel-
+ Verteilung lief bisher über theta = index * GOLDEN_ANGLE direkt auf dem Ankunftsindex — dadurch
+ hatten aufeinanderfolgende Panele auch aufeinanderfolgende Theta-Werte, was beim Zusehen sichtbar
+ als Spirallinie erschien statt als über die Kugel verteilte Punkte. Jetzt: feste Gesamtzahl
+ (DYSON_SPHERE_TOTAL_PANELS = 1.000) mit klassischer Fibonacci-Kugel-Formel für die Positionen
+ selbst (Index k = 0..999, für immer unveränderlich) + Bit-Umkehr-Permutation für die
+ Auftauchreihenfolge (siehe fixedPanelPosition()/REVEAL_ORDER weiter unten) — dadurch sieht jede
+ Zwischenanzahl gleichmäßig verteilt aus, ältere Panele springen dabei weiterhin nie um. Erst in
+ der separaten dyson-vorschau.html getestet und für gut befunden, jetzt hier übernommen.
 
  Sternenenergie-Ertrag skaliert mit panelsBuilt / DYSON_SPHERE_TOTAL_PANELS — die Gesamt-Panelzahl der
  fertigen Sphäre wurde in Phase 8 (Balancing) final auf 1.000 festgelegt (siehe Konstante weiter unten).
@@ -625,12 +629,25 @@
     sunCore.userData.spin = 0.0006;
 
     /* ============================================================
-       3) Panel-Verteilung — inkrementell, ohne festes Gesamt-N
-          (goldener Winkel für Länge + Golden-Ratio-Weyl-Folge für Breite).
-          Funktioniert unabhängig von DYSON_SPHERE_TOTAL_PANELS weiter unten.
+       3) Panel-Verteilung — BUGFIX v0.53.51 (Feedback: "die Module werden in einer
+          Spirale/Spirallinie angeordnet"): Der bisherige Ansatz (goldener Winkel für die
+          Länge direkt aus dem Ankunftsindex, also theta = index * GOLDEN_ANGLE) hatte einen
+          Denkfehler — mathematisch ist die STATISCHE Verteilung aller Punkte zwar sauber, aber
+          weil aufeinanderfolgende Panele damit auch aufeinanderfolgende Theta-Werte bekommen,
+          "wandert" jedes neue Panel beim Zusehen sichtbar um genau einen goldenen Winkel weiter
+          als sein Vorgänger — optisch entsteht dadurch eine klar erkennbare Spirallinie, statt
+          dass die neuen Panele wirkten wie über die Kugel verteilt.
+          Fix: feste Gesamtzahl (DYSON_SPHERE_TOTAL_PANELS = 1.000, ist eh schon final fixiert)
+          + klassische Fibonacci-Kugel-Formel für die Positionen selbst (unveränderlich, Index
+          k = 0..999) — die AUFTAUCHREIHENFOLGE kommt aber nicht mehr direkt aus k, sondern aus
+          einer Bit-Umkehr-Permutation (bitReverse, klassische Technik aus FFT/Bildaufbau fürs
+          "gleichmäßig werdende" Füllen). Dadurch springt bei JEDER Zwischenanzahl eine über die
+          ganze Kugel verteilte Teilmenge ins Bild statt einer sichtbaren Spirale. Identisch zum
+          Ansatz, der in der separaten dyson-vorschau.html schon getestet und für gut befunden
+          wurde. Ältere Panele springen dabei nie um: Position k bleibt für immer fix, nur WANN
+          welches k auftaucht ändert sich (rein kosmetisch, keine Auswirkung auf Spielstand).
        ============================================================ */
     const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); // ≈ 2.39996323 rad
-    const PHI_CONJUGATE = 0.6180339887498949;
     const PANEL_ORBIT_RADIUS = SUN_RADIUS + 8;
 
     // 🔆 Phase 8 (final): Sternenenergie-Ertrag. Die Gesamt-Panelzahl der fertigen Sphäre wurde im
@@ -644,11 +661,37 @@
       return STAR_ENERGY_BASE_PER_HOUR * Math.min(1, panelsBuilt / DYSON_SPHERE_TOTAL_PANELS) * (1 + DYSON_COLLECTOR_BONUS_PER_LEVEL * knownCollectorLevel);
     }
 
-    function panelDirection(index /* 1-based, Ankunftsreihenfolge */) {
-      const y = 1 - 2 * (((index + 0.5) * PHI_CONJUGATE) % 1); // -1..1, für jede Präfixlänge fair verteilt
+    // Feste, für immer unveränderliche Position pro Positions-Index k (0..999) — klassische
+    // Fibonacci-Kugel-Formel (goldener Winkel für die Länge, lineare Aufteilung für die Breite).
+    function fixedPanelPosition(k) {
+      const y = 1 - 2 * (k + 0.5) / DYSON_SPHERE_TOTAL_PANELS;
       const r = Math.sqrt(Math.max(0, 1 - y*y));
-      const theta = index * GOLDEN_ANGLE;
+      const theta = k * GOLDEN_ANGLE;
       return new THREE.Vector3(Math.cos(theta) * r, y, Math.sin(theta) * r);
+    }
+
+    // Bit-Umkehr-Permutation: bestimmt, in welcher Reihenfolge die 1.000 festen Positionen
+    // "auftauchen", damit jede Zwischenanzahl gleichmäßig über die Kugel verteilt aussieht statt
+    // spiralförmig von Pol zu Pol vollzulaufen.
+    function bitReverse(x, bits) {
+      let out = 0;
+      for (let b = 0; b < bits; b++) { out = (out << 1) | (x & 1); x >>= 1; }
+      return out;
+    }
+    const REVEAL_ORDER = (function buildRevealOrder(n) {
+      const bits = Math.ceil(Math.log2(n));
+      const padded = 1 << bits;
+      const order = [];
+      for (let i = 0; i < padded && order.length < n; i++) {
+        const r = bitReverse(i, bits);
+        if (r < n) order.push(r);
+      }
+      return order;
+    })(DYSON_SPHERE_TOTAL_PANELS);
+
+    function panelDirection(index /* 1-based, Ankunftsreihenfolge */) {
+      const k = REVEAL_ORDER[(index - 1) % DYSON_SPHERE_TOTAL_PANELS];
+      return fixedPanelPosition(k);
     }
 
     const panelGeometry = new THREE.BoxGeometry(1.15, 0.72, 0.08);
@@ -1068,6 +1111,16 @@
       werftPanelEl.style.display = "flex";
       knownCollectorLevel = state.collectorLevel || 0; // [Phase 14] siehe starEnergyRatePerHour oben
 
+      // BUGFIX v0.53.25: Der 1s-Poll (siehe setInterval weiter unten) ruft renderWerftPanel() jede
+      // Sekunde neu auf und hat die Eingabefelder bisher komplett neu aufgebaut (fester value="1" im
+      // Template) — dadurch wurde ein per "Max"-Knopf gesetzter Wert (oder eine Handeingabe) binnen
+      // höchstens 1 Sekunde wieder verworfen. Aktuellen Wert VOR dem Neuaufbau merken und danach
+      // (geklemmt auf den gültigen Bereich) wiederherstellen.
+      const __prevCountInput = document.getElementById("werft-count-input");
+      const __prevCountVal = __prevCountInput ? __prevCountInput.value : null;
+      const __prevConvertInput = document.getElementById("werft-convert-amount-input");
+      const __prevConvertVal = __prevConvertInput ? __prevConvertInput.value : null;
+
       werftPartsListEl.innerHTML = DYSON_PARTS_META.map(part => `
         <div class="werft-part-row">
           <span>${part.icon} ${part.name}</span>
@@ -1104,6 +1157,9 @@
             </div>
             <button class="werft-btn" id="werft-assemble-btn" type="button">Panel montieren</button>`;
           const input = document.getElementById("werft-count-input");
+          if (__prevCountVal !== null) {
+            input.value = Math.min(maxSets, Math.max(1, Math.floor(Number(__prevCountVal)) || 1));
+          }
           document.getElementById("werft-max-btn").addEventListener("click", () => { input.value = maxSets; });
           document.getElementById("werft-assemble-btn").addEventListener("click", () => {
             const count = Math.min(maxSets, Math.max(1, Math.floor(Number(input.value)) || 1));
@@ -1117,6 +1173,13 @@
       renderCollectorBlock(state);
       renderConverterBlock(state);
       renderForgeBlock(state);
+
+      // BUGFIX v0.53.25 (Fortsetzung): erst nachdem renderConverterBlock() sein Input neu aufgebaut
+      // hat, den vorherigen Wert (geklemmt auf verfügbare Sternenenergie) zurückschreiben.
+      const __newConvertInput = document.getElementById("werft-convert-amount-input");
+      if (__newConvertInput && __prevConvertVal !== null) {
+        __newConvertInput.value = Math.min(Math.max(1, state.starEnergy), Math.max(1, Math.floor(Number(__prevConvertVal)) || 1));
+      }
     }
 
     // [Phase 14] Kollektor-Array: aktuelle Stufe + Ertrags-Bonus, laufender Ausbau mit Fortschrittsbalken
