@@ -3,6 +3,20 @@
 ============================================================
  CHANGELOG — neue Einträge kommen immer ganz nach OBEN, unter diese Zeile.
 
+v0.53.55
+- Bugfix (Feedback: bei den Spezies-Kacheln scheint das Emoji-Icon durch das Bild durch): die
+  "img-fallback"-Klasse auf den Hero-Boxen der Spezies- und Offiziers-Karten war von Anfang an
+  gesetzt statt erst per `onerror`, dadurch rendert das CSS-`::before` (Emoji-Fallback) immer
+  hinter dem `<img>` — bei PNGs mit transparentem Hintergrund scheint das Emoji dann durch die
+  transparenten Bereiche durch, auch wenn das Bild eigentlich erfolgreich geladen hat. Klasse wird
+  jetzt nur noch im `onerror`-Fall gesetzt (wie beim Bild selbst nicht vorhanden), sonst bleibt die
+  Kachel rein bildfüllend ohne Emoji dahinter. Betrifft die 3 neuen Hero-Kacheln aus v0.53.54
+  (Offiziers-Lounge, Spezies-Erstansiedlung, Spezies-Umsiedlung).
+  Wichtig fürs Bilder-Erstellen: Hintergrund der PNGs bitte DECKEND/UNDURCHSICHTIG machen (dunkler
+  Vollton statt transparent) — sonst füllt das Bild die Kachel nicht wirklich komplett aus, auch
+  mit diesem Fix nicht (dann scheint einfach der dunkle Kachel-Verlauf statt des Emojis durch).
+  Anzeige auf Vorstart-/Titelbildschirm von "v0.53.54" auf "v0.53.55" erhöht.
+
 v0.53.54
 - Nachbesserung (Feedback: Offiziers-/Spezies-Bilder wären in der bisherigen 44×44px-Icon-Box zu klein/
   schmal): Offiziers-Lounge-Karten und Spezies-Auswahlkarten (Erst-Ansiedlung + Umsiedlung) nutzen jetzt
@@ -2784,7 +2798,7 @@ v0.53.32: Feedback "Sterne auf Spielseiten komplett unsichtbar" — stimmt: die 
     <canvas class="warp-canvas" id="warpGate"></canvas>
     <div class="game-logo" id="logoGate"></div>
     <div class="tap-hint" id="startGateBtn">Berühren zum Start</div>
-    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.54</div>
+    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.55</div>
   </div>
 
   <div class="title-screen hidden" id="titleScreen">
@@ -2801,7 +2815,7 @@ v0.53.32: Feedback "Sterne auf Spielseiten komplett unsichtbar" — stimmt: die 
       <button class="menu-btn" id="titleMusicBtn" style="font-size:11px;width:100%">🎵 Musik</button>
       <input type="range" class="music-volume-input" id="titleMusicVolume" min="0" max="1" step="0.05" style="width:130px;margin-top:8px;accent-color:#D4AF37;display:block">
     </div>
-    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.54</div>
+    <div class="version-label" style="position:absolute;bottom:10px;right:14px;font-size:10px;color:#8A7A6A;letter-spacing:0.5px">v0.53.55</div>
   </div>
   <div class="header">
     <div class="title-row">
@@ -14196,7 +14210,7 @@ function renderLifeformsView() {
       ${lockInfo.locked ? `<div class="bmeta" style="margin:2px 0 10px;color:#e0a030">🔒 Noch nicht verfügbar auf diesem Planeten: ${lockInfo.reason}</div>` : ``}
     </div>`;
     html += LIFEFORM_SPECIES.map(s => `<div class="officer-card"${lockInfo.locked ? ' style="opacity:.5"' : ''}>
-      <div class="market-item-hero img-fallback" data-icon="${s.icon}" style="margin:-12px -12px 10px;border-radius:12px 12px 0 0">
+      <div class="market-item-hero" data-icon="${s.icon}" style="margin:-12px -12px 10px;border-radius:12px 12px 0 0">
         <img src="${speciesImgSrc(s.key)}" alt="${s.name}" onerror="this.style.display='none';this.parentElement.classList.add('img-fallback')">
       </div>
       <div class="card-top">
@@ -14429,7 +14443,7 @@ function renderLifeformsView() {
   } else {
     html += `<div class="bmeta" style="margin:2px 4px 8px">Umsiedlung auf eine andere Spezies. Alle Genlinie-Gebäude &amp; -Technologien auf diesem Planeten gehen dabei verloren, die Bevölkerung startet neu bei 100.${resettleBlocked ? " Erst möglich, sobald der laufende Gebäudebau fertig ist." : ""}</div>`;
     html += LIFEFORM_SPECIES.filter(s => s.key !== lf.species).map(s => `<div class="officer-card">
-      <div class="market-item-hero img-fallback" data-icon="${s.icon}" style="margin:-12px -12px 10px;border-radius:12px 12px 0 0">
+      <div class="market-item-hero" data-icon="${s.icon}" style="margin:-12px -12px 10px;border-radius:12px 12px 0 0">
         <img src="${speciesImgSrc(s.key)}" alt="${s.name}" onerror="this.style.display='none';this.parentElement.classList.add('img-fallback')">
       </div>
       <div class="card-top">
@@ -14482,7 +14496,7 @@ function renderRankView() {
         const remaining = officerRemainingMs(o.key);
         const affordable = darkMatter >= o.cost;
         return `<div class="officer-card ${active_ ? "owned" : ""}">
-          <div class="market-item-hero img-fallback" data-icon="${o.icon}" style="margin:-12px -12px 10px;border-radius:12px 12px 0 0">
+          <div class="market-item-hero" data-icon="${o.icon}" style="margin:-12px -12px 10px;border-radius:12px 12px 0 0">
             <img src="${officerImgSrc(o.key)}" alt="${o.name}" onerror="this.style.display='none';this.parentElement.classList.add('img-fallback')">
           </div>
           <div class="card-top">
